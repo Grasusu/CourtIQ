@@ -214,5 +214,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# CourtIQ local app files
+backend/local_uploads/*
+!backend/local_uploads/.gitkeep
+frontend/node_modules/
+frontend/dist/
+
 # Streamlit
 .streamlit/secrets.toml

@@ -3,6 +3,7 @@ import csv
 import pytest
 
 from app.analytics.validators import validate_csv
+from app.analytics.validators import parse_box_score_csv
 
 
 HEADERS = [
@@ -40,6 +41,21 @@ def test_validate_csv_accepts_valid_box_score(tmp_path):
     )
 
     assert validate_csv(csv_path) is None
+
+
+def test_parse_box_score_csv_returns_typed_rows(tmp_path):
+    csv_path = tmp_path / "valid.csv"
+    write_csv(
+        csv_path,
+        [["2026-02-12", "Ajax Wolves", "Alex", 31, 18, 5, 7, 2, 1, 3, 7, 14, 2, 5, 2, 3]],
+    )
+
+    rows = parse_box_score_csv(csv_path)
+
+    assert len(rows) == 1
+    assert rows[0].player == "Alex"
+    assert rows[0].points == 18
+    assert rows[0].minutes == 31.0
 
 
 @pytest.mark.parametrize(

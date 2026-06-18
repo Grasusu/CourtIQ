@@ -44,6 +44,16 @@ Goal: make the project demoable.
 - Player profile page.
 - Simple charts and stat cards.
 
+## Phase 6: Product Hardening
+
+Goal: make the MVP feel like a serious backend project.
+
+- API workflow tests.
+- Alembic migrations.
+- Duplicate handling for teams and players.
+- Team analytics endpoint.
+- Clear local run and migration documentation.
+
 ## Done Means
 
 The MVP is done when someone can run the app locally, upload sample data, and understand how a player/team is performing without reading the raw CSV.

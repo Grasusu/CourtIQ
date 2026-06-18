@@ -1,6 +1,6 @@
 """Team routes."""
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -13,7 +13,10 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 
 @router.post("", response_model=TeamRead, status_code=201)
 def create_team_route(payload: TeamCreate, db: Session = Depends(get_db)):
-    return create_team(db, payload)
+    try:
+        return create_team(db, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.get("", response_model=list[TeamRead])

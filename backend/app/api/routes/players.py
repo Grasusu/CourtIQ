@@ -13,7 +13,11 @@ router = APIRouter(tags=["players"])
 
 @router.post("/teams/{team_id}/players", response_model=PlayerRead, status_code=201)
 def create_player_route(team_id: int, payload: PlayerCreate, db: Session = Depends(get_db)):
-    player = create_player(db, team_id, payload)
+    try:
+        player = create_player(db, team_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
     if player is None:
         raise HTTPException(status_code=404, detail="Team not found")
 

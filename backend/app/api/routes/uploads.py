@@ -32,4 +32,7 @@ async def upload_box_score_route(
     try:
         return import_box_score_csv(db, team_id, upload_path)
     except ValueError as exc:
+        if "does not exist" in str(exc):
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
         raise HTTPException(status_code=400, detail=str(exc)) from exc

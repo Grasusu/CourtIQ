@@ -217,6 +217,8 @@ __marimo__/
 # CourtIQ local app files
 backend/local_uploads/*
 !backend/local_uploads/.gitkeep
+backend/*.db
+backend/*.db-*
 frontend/node_modules/
 frontend/dist/
 

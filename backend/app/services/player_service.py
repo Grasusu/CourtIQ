@@ -1,6 +1,6 @@
 """Player service functions."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.player import Player
@@ -13,9 +13,19 @@ def create_player(db: Session, team_id: int, payload: PlayerCreate) -> Player | 
     if team is None:
         return None
 
+    name = payload.name.strip()
+    existing_player = db.scalar(
+        select(Player).where(
+            Player.team_id == team_id,
+            func.lower(Player.name) == name.casefold(),
+        )
+    )
+    if existing_player is not None:
+        raise ValueError("Player already exists on this team")
+
     player = Player(
         team_id=team_id,
-        name=payload.name.strip(),
+        name=name,
         position=payload.position,
         jersey_number=payload.jersey_number,
     )

@@ -1,6 +1,6 @@
 """Team service functions."""
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.team import Team
@@ -8,7 +8,12 @@ from app.schemas.team import TeamCreate
 
 
 def create_team(db: Session, payload: TeamCreate) -> Team:
-    team = Team(name=payload.name.strip(), season=payload.season)
+    name = payload.name.strip()
+    existing_team = db.scalar(select(Team).where(func.lower(Team.name) == name.casefold()))
+    if existing_team is not None:
+        raise ValueError("Team name already exists")
+
+    team = Team(name=name, season=payload.season)
     db.add(team)
     db.commit()
     db.refresh(team)

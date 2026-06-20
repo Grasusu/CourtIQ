@@ -101,3 +101,26 @@ After the MVP:
 - Public deployed demo.
 
 See the `docs/` folder for the roadmap, CSV format, architecture, and metrics plan.
+
+## Current Local Demo
+
+Backend:
+
+```bash
+cd backend
+venv/bin/python -m uvicorn app.main:app --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+PATH=/Users/alexandrubogdan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/bin:/Users/alexandrubogdan/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin:$PATH \
+/Users/alexandrubogdan/.cache/codex-runtimes/codex-primary-runtime/dependencies/bin/pnpm dev
+```
+
+Open:
+
+```txt
+http://127.0.0.1:5173
+```

@@ -33,6 +33,18 @@ This is the current backend MVP slice.
 - API workflow tests with `TestClient`.
 - Initial Alembic migration for the MVP schema.
 - Duplicate-name handling for teams and players.
+- CORS support for the local React frontend.
+
+## Frontend Implemented
+
+- Vite + React + TypeScript app.
+- API client for teams, players, CSV uploads, team analytics, and player analytics.
+- Team workspace sidebar.
+- CSV upload panel.
+- Team metric cards.
+- Team scoring trend chart.
+- Player table.
+- Player analytics panel.
 
 ## Local Run
 
@@ -67,7 +79,7 @@ venv/bin/python -m alembic -c alembic.ini upgrade head
 ## Next Build Slice
 
 1. Add auth basics: register/login and coach-owned teams.
-2. Add frontend upload and player profile pages.
-3. Add Docker Compose with backend + database.
-4. Replace startup table creation with migration-only setup before deployment.
+2. Add Docker Compose with backend + database.
+3. Replace startup table creation with migration-only setup before deployment.
+4. Add seeded demo data/reset script.
 5. Add async upload processing with Redis/RQ after the synchronous MVP feels stable.

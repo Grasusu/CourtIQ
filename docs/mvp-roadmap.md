@@ -44,6 +44,8 @@ Goal: make the project demoable.
 - Player profile page.
 - Simple charts and stat cards.
 
+Status: first frontend MVP is implemented with Vite, React, TypeScript, local API integration, team analytics, player analytics, and CSV upload.
+
 ## Phase 6: Product Hardening
 
 Goal: make the MVP feel like a serious backend project.

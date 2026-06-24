@@ -66,3 +66,28 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
     assert team_analytics_response.json()["games_played"] == 6
     assert team_analytics_response.json()["roster_size"] == 1
     assert team_analytics_response.json()["top_scorers"][0]["player_name"] == "Alex"
+
+
+def test_seed_and_reset_demo_data(api_client):
+    seed_response = api_client.post("/demo/seed")
+
+    assert seed_response.status_code == 201
+    seeded = seed_response.json()
+    assert seeded["team_name"] == "CourtIQ Demo"
+    assert seeded["upload"]["rows_processed"] == 6
+    assert seeded["player_count"] == 1
+
+    teams_response = api_client.get("/teams")
+    assert teams_response.status_code == 200
+    assert len(teams_response.json()) == 1
+
+    second_seed_response = api_client.post("/demo/seed")
+    assert second_seed_response.status_code == 201
+    assert second_seed_response.json()["upload"]["stats_updated"] == 6
+
+    reset_response = api_client.delete("/demo/reset")
+    assert reset_response.status_code == 200
+    assert reset_response.json()["deleted_teams"] == 1
+
+    empty_teams_response = api_client.get("/teams")
+    assert empty_teams_response.json() == []

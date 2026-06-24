@@ -30,10 +30,13 @@ This is the current backend MVP slice.
   - `POST /teams/{team_id}/uploads/box-score`
   - `GET /players/{player_id}/analytics`
   - `GET /teams/{team_id}/analytics`
+  - `POST /demo/seed`
+  - `DELETE /demo/reset`
 - API workflow tests with `TestClient`.
 - Initial Alembic migration for the MVP schema.
 - Duplicate-name handling for teams and players.
 - CORS support for the local React frontend.
+- Demo seed/reset endpoints for portfolio walkthroughs.
 
 ## Frontend Implemented
 

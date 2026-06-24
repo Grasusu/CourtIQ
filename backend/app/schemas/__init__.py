@@ -7,6 +7,7 @@ from app.schemas.analytics import (
     TeamPlayerSummary,
     TeamTrendPoint,
 )
+from app.schemas.demo import DemoResetResult, DemoSeedResult
 from app.schemas.game import GameCreate, GameRead
 from app.schemas.player import PlayerCreate, PlayerRead
 from app.schemas.player_game_stats import PlayerGameStatsCreate, PlayerGameStatsRead
@@ -16,6 +17,8 @@ from app.schemas.upload import UploadResult
 __all__ = [
     "GameCreate",
     "GameRead",
+    "DemoResetResult",
+    "DemoSeedResult",
     "PlayerAnalyticsRead",
     "PlayerCreate",
     "PlayerGameInsight",

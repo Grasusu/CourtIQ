@@ -124,3 +124,27 @@ Open:
 ```txt
 http://127.0.0.1:5173
 ```
+
+## Docker Demo
+
+```bash
+docker compose up --build
+```
+
+Then open:
+
+```txt
+http://127.0.0.1:5173
+```
+
+The API docs are available at:
+
+```txt
+http://127.0.0.1:8000/docs
+```
+
+## Verification
+
+```bash
+scripts/check.sh
+```

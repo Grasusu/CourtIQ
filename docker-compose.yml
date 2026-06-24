@@ -1,0 +1,28 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: sqlite:////app/backend/data/court_iq.db
+      LOCAL_UPLOAD_DIR: /app/backend/local_uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_data:/app/backend/data
+      - backend_uploads:/app/backend/local_uploads
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: http://127.0.0.1:8000
+    depends_on:
+      - backend
+    ports:
+      - "5173:4173"
+
+volumes:
+  backend_data:
+  backend_uploads:

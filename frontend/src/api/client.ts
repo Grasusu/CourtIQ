@@ -1,4 +1,6 @@
 import type {
+  DemoResetResult,
+  DemoSeedResult,
   Player,
   PlayerAnalytics,
   Team,
@@ -60,6 +62,18 @@ export function getTeamAnalytics(teamId: number): Promise<TeamAnalytics> {
 
 export function getPlayerAnalytics(playerId: number): Promise<PlayerAnalytics> {
   return request<PlayerAnalytics>(`/players/${playerId}/analytics`);
+}
+
+export function seedDemoData(reset = false): Promise<DemoSeedResult> {
+  return request<DemoSeedResult>(`/demo/seed?reset=${String(reset)}`, {
+    method: "POST"
+  });
+}
+
+export function resetDemoData(): Promise<DemoResetResult> {
+  return request<DemoResetResult>("/demo/reset", {
+    method: "DELETE"
+  });
 }
 
 export { API_BASE_URL };

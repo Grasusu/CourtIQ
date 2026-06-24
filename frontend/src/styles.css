@@ -95,14 +95,24 @@ button:disabled {
   text-overflow: ellipsis;
 }
 
-.alert {
+.alert,
+.success-banner {
   margin-bottom: 16px;
-  border: 1px solid #d7834b;
   border-radius: 8px;
-  background: #fff1e7;
-  color: #7b3510;
   padding: 12px 14px;
   font-weight: 650;
+}
+
+.alert {
+  border: 1px solid #d7834b;
+  background: #fff1e7;
+  color: #7b3510;
+}
+
+.success-banner {
+  border: 1px solid #7ba188;
+  background: #eef8f0;
+  color: #244f39;
 }
 
 .workspace-grid {
@@ -219,7 +229,8 @@ input:focus {
 
 .primary-button,
 .secondary-button,
-.icon-button {
+.icon-button,
+.ghost-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -250,6 +261,16 @@ input:focus {
 .secondary-button:hover,
 .icon-button:hover {
   border-color: #47735d;
+}
+
+.ghost-button {
+  border-color: transparent;
+  background: transparent;
+  color: #6a4b31;
+}
+
+.ghost-button:hover {
+  background: #f7efe2;
 }
 
 .icon-button {
@@ -301,6 +322,14 @@ input:focus {
   gap: 8px;
   flex-wrap: wrap;
   width: 100%;
+}
+
+.demo-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  border-top: 1px solid #ece6d8;
+  padding-top: 14px;
 }
 
 .metric-grid {

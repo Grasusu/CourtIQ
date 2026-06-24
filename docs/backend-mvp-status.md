@@ -47,6 +47,7 @@ This is the current backend MVP slice.
 - API client for teams, players, CSV uploads, team analytics, and player analytics.
 - Team workspace sidebar.
 - CSV upload panel.
+- Demo load/reload/reset controls.
 - Team metric cards.
 - Team scoring trend chart.
 - Player table.

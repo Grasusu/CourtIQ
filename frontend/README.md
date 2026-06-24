@@ -9,6 +9,7 @@ The current frontend is an MVP workspace, not a landing page. It connects to the
 3. View team analytics.
 4. Select a player.
 5. View player analytics.
+6. Load/reset demo data for quick portfolio walkthroughs.
 
 ## Local Run
 

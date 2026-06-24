@@ -23,6 +23,17 @@ export type UploadResult = {
   stats_updated: number;
 };
 
+export type DemoSeedResult = {
+  team_id: number;
+  team_name: string;
+  player_count: number;
+  upload: UploadResult;
+};
+
+export type DemoResetResult = {
+  deleted_teams: number;
+};
+
 export type PlayerGameInsight = {
   game_id: number;
   game_date: string;

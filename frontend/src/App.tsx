@@ -1,4 +1,4 @@
-import { Activity, Database, RefreshCw, Upload, Users } from "lucide-react";
+import { Activity, Database, RefreshCw, RotateCcw, Sparkles, Upload, Users } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
@@ -8,6 +8,8 @@ import {
   getTeamAnalytics,
   listPlayers,
   listTeams,
+  resetDemoData,
+  seedDemoData,
   uploadBoxScore
 } from "./api/client";
 import { TeamTrendChart } from "./components/charts/TeamTrendChart";
@@ -29,7 +31,9 @@ function App() {
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDemoAction, setIsDemoAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const selectedTeam = useMemo(
     () => teams.find((team) => team.id === selectedTeamId) ?? null,
@@ -66,7 +70,13 @@ function App() {
     try {
       const data = await listTeams();
       setTeams(data);
-      setSelectedTeamId((currentTeamId) => currentTeamId ?? data[0]?.id ?? null);
+      setSelectedTeamId((currentTeamId) => {
+        if (currentTeamId && data.some((team) => team.id === currentTeamId)) {
+          return currentTeamId;
+        }
+
+        return data[0]?.id ?? null;
+      });
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
@@ -126,6 +136,7 @@ function App() {
       setTeams((currentTeams) => [...currentTeams, team].sort((a, b) => a.name.localeCompare(b.name)));
       setSelectedTeamId(team.id);
       setTeamName("");
+      setStatusMessage(`${team.name} created.`);
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
@@ -145,11 +156,50 @@ function App() {
       const result = await uploadBoxScore(selectedTeamId, selectedFile);
       setUploadResult(result);
       setSelectedFile(null);
+      setStatusMessage(`${result.rows_processed} rows imported.`);
       await refreshDashboard(selectedTeamId);
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  async function handleSeedDemo(reset = false) {
+    setIsDemoAction(true);
+    setError(null);
+    try {
+      const result = await seedDemoData(reset);
+      const updatedTeams = await listTeams();
+      setTeams(updatedTeams);
+      setSelectedTeamId(result.team_id);
+      setUploadResult(result.upload);
+      setStatusMessage(
+        `${result.team_name} ready: ${result.upload.rows_processed} rows, ${result.player_count} players.`
+      );
+      await refreshDashboard(result.team_id);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsDemoAction(false);
+    }
+  }
+
+  async function handleResetDemo() {
+    setIsDemoAction(true);
+    setError(null);
+    try {
+      const result = await resetDemoData();
+      setUploadResult(null);
+      setPlayerAnalytics(null);
+      setStatusMessage(`${result.deleted_teams} demo team reset.`);
+      const updatedTeams = await listTeams();
+      setTeams(updatedTeams);
+      setSelectedTeamId(updatedTeams[0]?.id ?? null);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsDemoAction(false);
     }
   }
 
@@ -167,6 +217,7 @@ function App() {
       </header>
 
       {error ? <div className="alert">{error}</div> : null}
+      {statusMessage ? <div className="success-banner">{statusMessage}</div> : null}
 
       <section className="workspace-grid">
         <aside className="panel sidebar-panel">
@@ -209,6 +260,21 @@ function App() {
               Create team
             </button>
           </form>
+
+          <div className="demo-actions">
+            <button className="secondary-button" type="button" onClick={() => void handleSeedDemo(false)} disabled={isDemoAction}>
+              <Sparkles size={16} />
+              Load demo
+            </button>
+            <button className="secondary-button" type="button" onClick={() => void handleSeedDemo(true)} disabled={isDemoAction}>
+              <RefreshCw size={16} />
+              Reload demo
+            </button>
+            <button className="ghost-button" type="button" onClick={() => void handleResetDemo()} disabled={isDemoAction}>
+              <RotateCcw size={16} />
+              Reset demo
+            </button>
+          </div>
         </aside>
 
         <section className="main-column">

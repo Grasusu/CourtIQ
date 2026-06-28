@@ -56,4 +56,16 @@ Python worker or Lambda
 Metrics saved to PostgreSQL
 ```
 
+## Current Docker Architecture
+
+```txt
+React preview container
+   |
+FastAPI backend container
+   |
+PostgreSQL container
+```
+
+The backend container runs Alembic migrations at startup, then starts Uvicorn.
+
 Do not build the cloud version first. Build the MVP locally, then replace local storage and local processing with cloud-backed pieces.

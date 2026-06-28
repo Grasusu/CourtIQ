@@ -143,6 +143,16 @@ The API docs are available at:
 http://127.0.0.1:8000/docs
 ```
 
+Docker Compose starts:
+
+```txt
+PostgreSQL on 5432
+FastAPI on 8000
+React preview on 5173
+```
+
+The backend runs Alembic migrations automatically before starting.
+
 ## Verification
 
 ```bash

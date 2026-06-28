@@ -44,6 +44,7 @@ This is the current backend MVP slice.
 - CORS support for the local React frontend.
 - Demo seed/reset endpoints for portfolio walkthroughs.
 - Docker Compose setup for backend and frontend.
+- PostgreSQL container for Docker-based local development.
 - GitHub Actions workflow for backend tests and frontend build.
 - Local `scripts/check.sh` verification script.
 

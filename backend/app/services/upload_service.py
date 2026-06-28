@@ -13,8 +13,17 @@ from app.models.team import Team
 from app.schemas.upload import UploadResult
 
 
-def import_box_score_csv(db: Session, team_id: int, file_path: str | Path) -> UploadResult:
-    team = db.get(Team, team_id)
+def import_box_score_csv(
+    db: Session,
+    team_id: int,
+    file_path: str | Path,
+    owner_id: int | None = None,
+) -> UploadResult:
+    query = select(Team).where(Team.id == team_id)
+    if owner_id is not None:
+        query = query.where(Team.owner_id == owner_id)
+
+    team = db.scalar(query)
     if team is None:
         raise ValueError(f"Team {team_id} does not exist")
 

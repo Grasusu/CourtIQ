@@ -8,8 +8,8 @@ from app.models.team import Team
 from app.schemas.player import PlayerCreate
 
 
-def create_player(db: Session, team_id: int, payload: PlayerCreate) -> Player | None:
-    team = db.get(Team, team_id)
+def create_player(db: Session, team_id: int, payload: PlayerCreate, owner_id: int) -> Player | None:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
     if team is None:
         return None
 
@@ -35,12 +35,16 @@ def create_player(db: Session, team_id: int, payload: PlayerCreate) -> Player | 
     return player
 
 
-def get_player(db: Session, player_id: int) -> Player | None:
-    return db.get(Player, player_id)
+def get_player(db: Session, player_id: int, owner_id: int | None = None) -> Player | None:
+    query = select(Player).where(Player.id == player_id)
+    if owner_id is not None:
+        query = query.join(Team).where(Team.owner_id == owner_id)
+
+    return db.scalar(query)
 
 
-def list_team_players(db: Session, team_id: int) -> list[Player] | None:
-    team = db.get(Team, team_id)
+def list_team_players(db: Session, team_id: int, owner_id: int) -> list[Player] | None:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
     if team is None:
         return None
 

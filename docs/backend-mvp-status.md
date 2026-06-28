@@ -5,7 +5,10 @@ This is the current backend MVP slice.
 ## Implemented
 
 - SQLAlchemy database setup.
+- JWT auth with register/login/me endpoints.
+- Coach-owned teams with authenticated access checks.
 - MVP database models:
+  - `User`
   - `Team`
   - `Player`
   - `Game`
@@ -21,6 +24,9 @@ This is the current backend MVP slice.
   - generating team analytics
 - FastAPI routes for:
   - `GET /health`
+  - `POST /auth/register`
+  - `POST /auth/login`
+  - `GET /auth/me`
   - `POST /teams`
   - `GET /teams`
   - `POST /teams/{team_id}/players`

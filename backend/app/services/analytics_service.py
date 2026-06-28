@@ -28,8 +28,12 @@ from app.schemas.analytics import (
 )
 
 
-def get_player_analytics(db: Session, player_id: int) -> PlayerAnalyticsRead | None:
-    player = db.get(Player, player_id)
+def get_player_analytics(db: Session, player_id: int, owner_id: int | None = None) -> PlayerAnalyticsRead | None:
+    query = select(Player).where(Player.id == player_id)
+    if owner_id is not None:
+        query = query.join(Team).where(Team.owner_id == owner_id)
+
+    player = db.scalar(query)
     if player is None:
         return None
 
@@ -102,8 +106,12 @@ def get_player_analytics(db: Session, player_id: int) -> PlayerAnalyticsRead | N
     )
 
 
-def get_team_analytics(db: Session, team_id: int) -> TeamAnalyticsRead | None:
-    team = db.get(Team, team_id)
+def get_team_analytics(db: Session, team_id: int, owner_id: int | None = None) -> TeamAnalyticsRead | None:
+    query = select(Team).where(Team.id == team_id)
+    if owner_id is not None:
+        query = query.where(Team.owner_id == owner_id)
+
+    team = db.scalar(query)
     if team is None:
         return None
 

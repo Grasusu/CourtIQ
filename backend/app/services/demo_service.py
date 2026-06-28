@@ -16,18 +16,22 @@ DEMO_SEASON = "2025-26"
 DEMO_CSV_PATH = Path(__file__).resolve().parents[3] / "sample_data" / "demo_multi_game.csv"
 
 
-def seed_demo_data(db: Session, reset: bool = False) -> DemoSeedResult:
+def seed_demo_data(db: Session, reset: bool = False, owner_id: int | None = None) -> DemoSeedResult:
     if reset:
-        reset_demo_data(db)
+        reset_demo_data(db, owner_id=owner_id)
 
-    team = db.scalar(select(Team).where(func.lower(Team.name) == DEMO_TEAM_NAME.casefold()))
+    query = select(Team).where(func.lower(Team.name) == DEMO_TEAM_NAME.casefold())
+    if owner_id is not None:
+        query = query.where(Team.owner_id == owner_id)
+
+    team = db.scalar(query)
     if team is None:
-        team = Team(name=DEMO_TEAM_NAME, season=DEMO_SEASON)
+        team = Team(name=DEMO_TEAM_NAME, season=DEMO_SEASON, owner_id=owner_id)
         db.add(team)
         db.commit()
         db.refresh(team)
 
-    upload_result = import_box_score_csv(db, team.id, DEMO_CSV_PATH)
+    upload_result = import_box_score_csv(db, team.id, DEMO_CSV_PATH, owner_id=owner_id)
     player_count = db.scalar(select(func.count()).select_from(Player).where(Player.team_id == team.id)) or 0
 
     return DemoSeedResult(
@@ -38,8 +42,12 @@ def seed_demo_data(db: Session, reset: bool = False) -> DemoSeedResult:
     )
 
 
-def reset_demo_data(db: Session) -> DemoResetResult:
-    demo_teams = list(db.scalars(select(Team).where(func.lower(Team.name) == DEMO_TEAM_NAME.casefold())).all())
+def reset_demo_data(db: Session, owner_id: int | None = None) -> DemoResetResult:
+    query = select(Team).where(func.lower(Team.name) == DEMO_TEAM_NAME.casefold())
+    if owner_id is not None:
+        query = query.where(Team.owner_id == owner_id)
+
+    demo_teams = list(db.scalars(query).all())
     for team in demo_teams:
         db.delete(team)
 

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     analytics_router,
+    auth_router,
     demo_router,
     games_router,
     players_router,
@@ -34,6 +35,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(teams_router)
 app.include_router(players_router)
 app.include_router(games_router)

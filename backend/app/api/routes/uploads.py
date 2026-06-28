@@ -7,7 +7,9 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.models.user import User
 from app.schemas.upload import UploadResult
 from app.services.upload_service import import_box_score_csv
 
@@ -20,6 +22,7 @@ async def upload_box_score_route(
     team_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     if file.filename and not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV uploads are supported")
@@ -30,7 +33,7 @@ async def upload_box_score_route(
     upload_path.write_bytes(await file.read())
 
     try:
-        return import_box_score_csv(db, team_id, upload_path)
+        return import_box_score_csv(db, team_id, upload_path, owner_id=current_user.id)
     except ValueError as exc:
         if "does not exist" in str(exc):
             raise HTTPException(status_code=404, detail=str(exc)) from exc

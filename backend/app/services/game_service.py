@@ -7,8 +7,8 @@ from app.models.game import Game
 from app.models.team import Team
 
 
-def list_team_games(db: Session, team_id: int) -> list[Game] | None:
-    team = db.get(Team, team_id)
+def list_team_games(db: Session, team_id: int, owner_id: int) -> list[Game] | None:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
     if team is None:
         return None
 

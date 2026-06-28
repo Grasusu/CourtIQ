@@ -1,13 +1,16 @@
-import { Activity, Database, RefreshCw, RotateCcw, Sparkles, Upload, Users } from "lucide-react";
+import { Activity, Database, LogOut, RefreshCw, RotateCcw, Sparkles, Upload, Users } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   API_BASE_URL,
   createTeam,
+  getMe,
   getPlayerAnalytics,
   getTeamAnalytics,
   listPlayers,
   listTeams,
+  login,
+  register,
   resetDemoData,
   seedDemoData,
   uploadBoxScore
@@ -16,7 +19,9 @@ import { TeamTrendChart } from "./components/charts/TeamTrendChart";
 import { MetricCard } from "./components/layout/MetricCard";
 import { PlayerAnalyticsPanel } from "./components/layout/PlayerAnalyticsPanel";
 import { PlayerTable } from "./components/tables/PlayerTable";
-import type { Player, PlayerAnalytics, Team, TeamAnalytics, UploadResult } from "./types/api";
+import type { Player, PlayerAnalytics, Team, TeamAnalytics, UploadResult, User } from "./types/api";
+
+const TOKEN_STORAGE_KEY = "courtiq_access_token";
 
 function App() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -29,9 +34,15 @@ function App() {
   const [season, setSeason] = useState("2025-26");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [email, setEmail] = useState("coach@example.com");
+  const [password, setPassword] = useState("strong-password");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDemoAction, setIsDemoAction] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
@@ -41,7 +52,11 @@ function App() {
   );
 
   useEffect(() => {
-    void loadTeams();
+    if (!authToken) {
+      return;
+    }
+
+    void restoreSession(authToken);
   }, []);
 
   useEffect(() => {
@@ -65,10 +80,14 @@ function App() {
   }, [selectedPlayerId]);
 
   async function loadTeams() {
+    if (!authToken) {
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
-      const data = await listTeams();
+      const data = await listTeams(authToken);
       setTeams(data);
       setSelectedTeamId((currentTeamId) => {
         if (currentTeamId && data.some((team) => team.id === currentTeamId)) {
@@ -85,7 +104,7 @@ function App() {
   }
 
   async function refreshDashboard(teamId = selectedTeamId) {
-    if (teamId === null) {
+    if (teamId === null || !authToken) {
       return;
     }
 
@@ -93,8 +112,8 @@ function App() {
     setError(null);
     try {
       const [playersData, analyticsData] = await Promise.all([
-        listPlayers(teamId),
-        getTeamAnalytics(teamId)
+        listPlayers(teamId, authToken),
+        getTeamAnalytics(teamId, authToken)
       ]);
 
       setPlayers(playersData);
@@ -114,9 +133,13 @@ function App() {
   }
 
   async function loadPlayerAnalytics(playerId: number) {
+    if (!authToken) {
+      return;
+    }
+
     setError(null);
     try {
-      const analytics = await getPlayerAnalytics(playerId);
+      const analytics = await getPlayerAnalytics(playerId, authToken);
       setPlayerAnalytics(analytics);
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
@@ -125,14 +148,14 @@ function App() {
 
   async function handleCreateTeam(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!teamName.trim()) {
+    if (!teamName.trim() || !authToken) {
       return;
     }
 
     setIsLoading(true);
     setError(null);
     try {
-      const team = await createTeam({ name: teamName.trim(), season });
+      const team = await createTeam({ name: teamName.trim(), season }, authToken);
       setTeams((currentTeams) => [...currentTeams, team].sort((a, b) => a.name.localeCompare(b.name)));
       setSelectedTeamId(team.id);
       setTeamName("");
@@ -146,14 +169,14 @@ function App() {
 
   async function handleUpload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedFile || selectedTeamId === null) {
+    if (!selectedFile || selectedTeamId === null || !authToken) {
       return;
     }
 
     setIsUploading(true);
     setError(null);
     try {
-      const result = await uploadBoxScore(selectedTeamId, selectedFile);
+      const result = await uploadBoxScore(selectedTeamId, selectedFile, authToken);
       setUploadResult(result);
       setSelectedFile(null);
       setStatusMessage(`${result.rows_processed} rows imported.`);
@@ -166,11 +189,15 @@ function App() {
   }
 
   async function handleSeedDemo(reset = false) {
+    if (!authToken) {
+      return;
+    }
+
     setIsDemoAction(true);
     setError(null);
     try {
-      const result = await seedDemoData(reset);
-      const updatedTeams = await listTeams();
+      const result = await seedDemoData(reset, authToken);
+      const updatedTeams = await listTeams(authToken);
       setTeams(updatedTeams);
       setSelectedTeamId(result.team_id);
       setUploadResult(result.upload);
@@ -186,14 +213,18 @@ function App() {
   }
 
   async function handleResetDemo() {
+    if (!authToken) {
+      return;
+    }
+
     setIsDemoAction(true);
     setError(null);
     try {
-      const result = await resetDemoData();
+      const result = await resetDemoData(authToken);
       setUploadResult(null);
       setPlayerAnalytics(null);
       setStatusMessage(`${result.deleted_teams} demo team reset.`);
-      const updatedTeams = await listTeams();
+      const updatedTeams = await listTeams(authToken);
       setTeams(updatedTeams);
       setSelectedTeamId(updatedTeams[0]?.id ?? null);
     } catch (caughtError) {
@@ -201,6 +232,68 @@ function App() {
     } finally {
       setIsDemoAction(false);
     }
+  }
+
+  async function restoreSession(token: string) {
+    setIsAuthLoading(true);
+    setError(null);
+    try {
+      const user = await getMe(token);
+      setCurrentUser(user);
+      await loadTeamsWithToken(token);
+    } catch {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      setAuthToken(null);
+      setCurrentUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }
+
+  async function loadTeamsWithToken(token: string) {
+    const data = await listTeams(token);
+    setTeams(data);
+    setSelectedTeamId((currentTeamId) => {
+      if (currentTeamId && data.some((team) => team.id === currentTeamId)) {
+        return currentTeamId;
+      }
+
+      return data[0]?.id ?? null;
+    });
+  }
+
+  async function handleAuth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsAuthLoading(true);
+    setError(null);
+    try {
+      const response = authMode === "login"
+        ? await login({ email, password })
+        : await register({ email, password });
+
+      localStorage.setItem(TOKEN_STORAGE_KEY, response.access_token);
+      setAuthToken(response.access_token);
+      setCurrentUser(response.user);
+      setStatusMessage(`Signed in as ${response.user.email}.`);
+      await loadTeamsWithToken(response.access_token);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
+    setAuthToken(null);
+    setCurrentUser(null);
+    setTeams([]);
+    setSelectedTeamId(null);
+    setPlayers([]);
+    setTeamAnalytics(null);
+    setPlayerAnalytics(null);
+    setUploadResult(null);
+    setStatusMessage("Signed out.");
   }
 
   return (
@@ -219,7 +312,47 @@ function App() {
       {error ? <div className="alert">{error}</div> : null}
       {statusMessage ? <div className="success-banner">{statusMessage}</div> : null}
 
-      <section className="workspace-grid">
+      {!currentUser ? (
+        <section className="auth-shell panel">
+          <div>
+            <p className="eyebrow">Coach workspace</p>
+            <h2>{authMode === "login" ? "Sign in to CourtIQ" : "Create your coach account"}</h2>
+            <p className="auth-copy">
+              Teams, uploads, and analytics are now tied to your account. Use the demo credentials or register a new coach.
+            </p>
+          </div>
+          <form className="auth-form" onSubmit={handleAuth}>
+            <label>
+              <span>Email</span>
+              <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" />
+            </label>
+            <button className="primary-button" type="submit" disabled={isAuthLoading}>
+              {isAuthLoading ? "Working" : authMode === "login" ? "Sign in" : "Register"}
+            </button>
+            <button
+              className="ghost-button"
+              type="button"
+              onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
+            >
+              {authMode === "login" ? "Create account" : "Use existing account"}
+            </button>
+          </form>
+        </section>
+      ) : (
+        <>
+          <div className="session-bar">
+            <span>{currentUser.email}</span>
+            <button className="secondary-button" type="button" onClick={handleLogout}>
+              <LogOut size={16} />
+              Sign out
+            </button>
+          </div>
+
+          <section className="workspace-grid">
         <aside className="panel sidebar-panel">
           <div className="section-heading">
             <div>
@@ -356,7 +489,9 @@ function App() {
           </section>
           <PlayerAnalyticsPanel analytics={playerAnalytics} />
         </aside>
-      </section>
+          </section>
+        </>
+      )}
     </main>
   );
 }

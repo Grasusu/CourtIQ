@@ -4,12 +4,13 @@ React + TypeScript frontend for CourtIQ.
 
 The current frontend is an MVP workspace, not a landing page. It connects to the FastAPI backend and supports the first product workflow:
 
-1. Create/select a team.
-2. Upload a box-score CSV.
-3. View team analytics.
-4. Select a player.
-5. View player analytics.
-6. Load/reset demo data for quick portfolio walkthroughs.
+1. Register or sign in as a coach.
+2. Create/select a team.
+3. Upload a box-score CSV.
+4. View team analytics.
+5. Select a player.
+6. View player analytics.
+7. Load/reset demo data for quick portfolio walkthroughs.
 
 ## Local Run
 

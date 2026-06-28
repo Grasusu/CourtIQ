@@ -50,6 +50,7 @@ This is the current backend MVP slice.
 ## Frontend Implemented
 
 - Vite + React + TypeScript app.
+- Register/login screen with persisted JWT session.
 - API client for teams, players, CSV uploads, team analytics, and player analytics.
 - Team workspace sidebar.
 - CSV upload panel.

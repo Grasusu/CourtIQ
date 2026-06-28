@@ -5,6 +5,19 @@ export type Team = {
   created_at: string;
 };
 
+export type User = {
+  id: number;
+  email: string;
+  role: string;
+  created_at: string;
+};
+
+export type TokenResponse = {
+  access_token: string;
+  token_type: "bearer";
+  user: User;
+};
+
 export type Player = {
   id: number;
   team_id: number;

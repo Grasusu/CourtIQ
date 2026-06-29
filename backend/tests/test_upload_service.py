@@ -8,9 +8,11 @@ from app.models.game import Game
 from app.models.player import Player
 from app.models.player_game_stats import PlayerGameStats
 from app.models.team import Team
+from app.models.upload_job import UploadJob
+from app.models.user import User
 from app.services.analytics_service import get_player_analytics
 from app.services.analytics_service import get_team_analytics
-from app.services.upload_service import import_box_score_csv
+from app.services.upload_service import create_upload_job, import_box_score_csv, process_upload_job_in_session
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -52,6 +54,31 @@ def test_import_box_score_csv_updates_existing_player_game_stats(db_session):
     assert second_result.stats_updated == 3
 
     assert db_session.scalar(select(func.count()).select_from(PlayerGameStats)) == 3
+
+
+def test_process_upload_job_updates_status_and_counts(db_session):
+    user = User(email="coach@example.com", password_hash="hashed")
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    team = Team(name="CourtIQ Demo", season="2025-26", owner_id=user.id)
+    db_session.add(team)
+    db_session.commit()
+    db_session.refresh(team)
+
+    csv_path = PROJECT_ROOT / "sample_data" / "demo_game_1.csv"
+    job = create_upload_job(db_session, team.id, "demo_game_1.csv", csv_path, owner_id=user.id)
+    processed_job = process_upload_job_in_session(db_session, job.id)
+
+    assert processed_job is not None
+    assert processed_job.status == "completed"
+    assert processed_job.rows_processed == 3
+    assert processed_job.games_created == 1
+    assert processed_job.players_created == 3
+    assert processed_job.stats_created == 3
+    assert processed_job.error_message is None
+    assert db_session.scalar(select(func.count()).select_from(UploadJob)) == 1
 
 
 def test_player_analytics_after_multi_game_import(db_session):

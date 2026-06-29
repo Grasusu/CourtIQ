@@ -1,16 +1,25 @@
 """CSV import service for box-score uploads."""
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analytics.validators import BoxScoreRow, parse_box_score_csv
+from app.core.database import SessionLocal
 from app.models.game import Game
 from app.models.player import Player
 from app.models.player_game_stats import PlayerGameStats
 from app.models.team import Team
+from app.models.upload_job import UploadJob
 from app.schemas.upload import UploadResult
+
+
+UPLOAD_STATUS_PENDING = "pending"
+UPLOAD_STATUS_PROCESSING = "processing"
+UPLOAD_STATUS_COMPLETED = "completed"
+UPLOAD_STATUS_FAILED = "failed"
 
 
 def import_box_score_csv(
@@ -89,6 +98,98 @@ def import_box_score_csv(
     )
 
 
+def create_upload_job(
+    db: Session,
+    team_id: int,
+    filename: str,
+    stored_path: str | Path,
+    owner_id: int,
+) -> UploadJob:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
+    if team is None:
+        raise ValueError(f"Team {team_id} does not exist")
+
+    job = UploadJob(
+        team_id=team_id,
+        owner_id=owner_id,
+        filename=filename,
+        stored_path=str(stored_path),
+        status=UPLOAD_STATUS_PENDING,
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def get_upload_job(db: Session, job_id: int, owner_id: int) -> UploadJob | None:
+    return db.scalar(select(UploadJob).where(UploadJob.id == job_id, UploadJob.owner_id == owner_id))
+
+
+def list_team_upload_jobs(db: Session, team_id: int, owner_id: int) -> list[UploadJob]:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
+    if team is None:
+        raise ValueError(f"Team {team_id} does not exist")
+
+    return list(
+        db.scalars(
+            select(UploadJob)
+            .where(UploadJob.team_id == team_id, UploadJob.owner_id == owner_id)
+            .order_by(UploadJob.created_at.desc(), UploadJob.id.desc())
+        ).all()
+    )
+
+
+def process_upload_job(job_id: int) -> None:
+    db = SessionLocal()
+    try:
+        process_upload_job_in_session(db, job_id)
+    finally:
+        db.close()
+
+
+def process_upload_job_in_session(db: Session, job_id: int) -> UploadJob | None:
+    job = db.get(UploadJob, job_id)
+    if job is None:
+        return None
+
+    job.status = UPLOAD_STATUS_PROCESSING
+    job.error_message = None
+    job.started_at = _utc_now()
+    db.commit()
+
+    try:
+        result = import_box_score_csv(db, job.team_id, job.stored_path, owner_id=job.owner_id)
+    except Exception as exc:
+        db.rollback()
+        failed_job = db.get(UploadJob, job_id)
+        if failed_job is None:
+            return None
+
+        failed_job.status = UPLOAD_STATUS_FAILED
+        failed_job.error_message = str(exc)
+        failed_job.completed_at = _utc_now()
+        db.commit()
+        db.refresh(failed_job)
+        return failed_job
+
+    completed_job = db.get(UploadJob, job_id)
+    if completed_job is None:
+        return None
+
+    completed_job.status = UPLOAD_STATUS_COMPLETED
+    completed_job.rows_processed = result.rows_processed
+    completed_job.games_created = result.games_created
+    completed_job.players_created = result.players_created
+    completed_job.stats_created = result.stats_created
+    completed_job.stats_updated = result.stats_updated
+    completed_job.error_message = None
+    completed_job.completed_at = _utc_now()
+    db.commit()
+    db.refresh(completed_job)
+    return completed_job
+
+
 def _stats_values(row: BoxScoreRow) -> dict[str, float | int]:
     return {
         "minutes": row.minutes,
@@ -105,3 +206,7 @@ def _stats_values(row: BoxScoreRow) -> dict[str, float | int]:
         "ftm": row.ftm,
         "fta": row.fta,
     }
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)

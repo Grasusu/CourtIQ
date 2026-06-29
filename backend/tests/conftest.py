@@ -6,8 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core import database
 from app.core.database import Base, get_db
 from app.main import app
+from app.services import upload_service
 from app import models  # noqa: F401
 
 
@@ -19,6 +21,10 @@ def db_session():
         poolclass=StaticPool,
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    original_database_session_local = database.SessionLocal
+    original_upload_session_local = upload_service.SessionLocal
+    database.SessionLocal = TestingSessionLocal
+    upload_service.SessionLocal = TestingSessionLocal
 
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
@@ -26,6 +32,8 @@ def db_session():
         yield db
     finally:
         db.close()
+        database.SessionLocal = original_database_session_local
+        upload_service.SessionLocal = original_upload_session_local
         Base.metadata.drop_all(bind=engine)
 
 

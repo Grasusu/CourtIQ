@@ -10,4 +10,6 @@ def test_model_metadata_contains_mvp_tables():
         "players",
         "games",
         "player_game_stats",
+        "upload_jobs",
+        "users",
     }

@@ -22,3 +22,4 @@ class Team(Base):
     owner = relationship("User", back_populates="teams")
     players = relationship("Player", back_populates="team", cascade="all, delete-orphan")
     games = relationship("Game", back_populates="team", cascade="all, delete-orphan")
+    upload_jobs = relationship("UploadJob", back_populates="team", cascade="all, delete-orphan")

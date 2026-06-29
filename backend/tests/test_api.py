@@ -96,10 +96,22 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
             f"/teams/{team_id}/uploads/box-score",
             files={"file": ("demo_multi_game.csv", file, "text/csv")},
             headers=headers,
-        )
+    )
 
     assert upload_response.status_code == 201
-    assert upload_response.json()["rows_processed"] == 6
+    upload_job = upload_response.json()
+    assert upload_job["filename"] == "demo_multi_game.csv"
+    assert upload_job["status"] in {"pending", "processing", "completed"}
+
+    job_response = api_client.get(f"/uploads/jobs/{upload_job['id']}", headers=headers)
+    assert job_response.status_code == 200
+    completed_job = job_response.json()
+    assert completed_job["status"] == "completed"
+    assert completed_job["rows_processed"] == 6
+
+    jobs_response = api_client.get(f"/teams/{team_id}/uploads/jobs", headers=headers)
+    assert jobs_response.status_code == 200
+    assert jobs_response.json()[0]["id"] == upload_job["id"]
 
     players_response = api_client.get(f"/teams/{team_id}/players", headers=headers)
     assert players_response.status_code == 200
@@ -116,6 +128,31 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
     assert team_analytics_response.json()["games_played"] == 6
     assert team_analytics_response.json()["roster_size"] == 1
     assert team_analytics_response.json()["top_scorers"][0]["player_name"] == "Alex"
+
+
+def test_upload_job_tracks_validation_failure(api_client):
+    headers = auth_headers(api_client)
+    team_response = api_client.post(
+        "/teams",
+        json={"name": "CourtIQ Demo", "season": "2025-26"},
+        headers=headers,
+    )
+    team_id = team_response.json()["id"]
+
+    upload_response = api_client.post(
+        f"/teams/{team_id}/uploads/box-score",
+        files={"file": ("broken.csv", b"game_date,player\n2026-02-12,Alex\n", "text/csv")},
+        headers=headers,
+    )
+
+    assert upload_response.status_code == 201
+    job_id = upload_response.json()["id"]
+
+    job_response = api_client.get(f"/uploads/jobs/{job_id}", headers=headers)
+    assert job_response.status_code == 200
+    failed_job = job_response.json()
+    assert failed_job["status"] == "failed"
+    assert "Missing required columns" in failed_job["error_message"]
 
 
 def test_seed_and_reset_demo_data(api_client):

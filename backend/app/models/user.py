@@ -22,3 +22,4 @@ class User(Base):
     )
 
     teams = relationship("Team", back_populates="owner")
+    upload_jobs = relationship("UploadJob", back_populates="owner")

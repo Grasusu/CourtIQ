@@ -1,13 +1,19 @@
 # Workers
 
-Background jobs should be added after the synchronous MVP works.
+CourtIQ now has a small worker boundary for CSV ingestion.
 
-Later flow:
+Current local flow:
 
 1. API receives CSV upload.
 2. API creates an `UploadJob`.
-3. API stores the uploaded file locally or in S3.
-4. Worker validates and processes the CSV.
+3. API stores the uploaded file locally.
+4. FastAPI `BackgroundTasks` calls `upload_worker.run_upload_job`.
 5. Worker saves metrics and marks the job completed or failed.
 
-Start simple first. A working synchronous upload is better than a half-finished worker system.
+Later cloud flow:
+
+1. API stores the uploaded file in S3.
+2. API creates an `UploadJob`.
+3. API sends the job id to SQS or Redis.
+4. A separate Python worker calls `upload_worker.run_upload_job`.
+5. Frontend keeps polling the same job-status endpoints.

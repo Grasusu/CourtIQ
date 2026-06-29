@@ -8,7 +8,7 @@ These features should come after the MVP works.
 - Coach/player roles.
 - PostgreSQL database.
 - Alembic migrations.
-- Background upload processing.
+- Background upload processing with a local worker entrypoint.
 - Upload job status tracking.
 - Clear CSV validation errors.
 - Unit and API tests.
@@ -30,6 +30,13 @@ These features should come after the MVP works.
 - Worker process for async analytics.
 - CI with GitHub Actions.
 - Deployed demo.
+
+## Current Cloud-Ready Pieces
+
+- `UploadJob` table stores job metadata, status, counters, and failure messages.
+- Upload endpoint stores CSV files locally and queues work through FastAPI `BackgroundTasks`.
+- `backend/app/workers/upload_worker.py` exposes a worker entrypoint that can later be called by SQS/Celery/RQ.
+- Frontend polls upload job status, so the UI is already compatible with cloud workers.
 
 ## CV Bullet Target
 

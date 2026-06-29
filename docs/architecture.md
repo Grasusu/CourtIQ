@@ -9,6 +9,12 @@ CSV upload
    |
 FastAPI endpoint
    |
+local file storage
+   |
+UploadJob row
+   |
+BackgroundTasks worker entrypoint
+   |
 CSV validation
    |
 Analytics calculations
@@ -18,7 +24,7 @@ Database records
 Dashboard API response
 ```
 
-This is enough for the first serious version.
+This is enough for the first serious version while still looking like a real ingestion system.
 
 ## Full-Stack Depth Architecture
 
@@ -31,7 +37,7 @@ PostgreSQL
    |
 UploadJob table
    |
-Redis/RQ or Celery worker
+Worker entrypoint
    |
 Analytics module
    |
@@ -69,3 +75,12 @@ PostgreSQL container
 The backend container runs Alembic migrations at startup, then starts Uvicorn.
 
 Do not build the cloud version first. Build the MVP locally, then replace local storage and local processing with cloud-backed pieces.
+
+The current local upload pipeline already has the cloud-facing shape:
+
+- `local_uploads/` can become S3 object storage.
+- FastAPI `BackgroundTasks` can become an SQS message.
+- `backend/app/workers/upload_worker.py` can become the worker process.
+- The frontend can keep polling the same upload job endpoints.
+
+See `docs/cloud-roadmap.md` for the step-by-step cloud migration path.

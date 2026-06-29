@@ -15,8 +15,8 @@ from app.services.upload_service import (
     create_upload_job,
     get_upload_job,
     list_team_upload_jobs,
-    process_upload_job,
 )
+from app.workers.upload_worker import run_upload_job
 
 
 router = APIRouter(tags=["uploads"])
@@ -52,7 +52,7 @@ async def upload_box_score_route(
 
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    background_tasks.add_task(process_upload_job, job.id)
+    background_tasks.add_task(run_upload_job, job.id)
     return job
 
 

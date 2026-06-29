@@ -2,7 +2,7 @@
 
 CourtIQ is a basketball analytics platform for coaches and players.
 
-The first version should be a focused MVP: upload box-score CSV data, validate it, calculate useful basketball metrics, and show player/team insights. After that works locally, the project can grow into a deeper full-stack CV project with async processing, auth, PostgreSQL, Redis, cloud storage, PDF reports, CI, and deployment.
+The current version is a focused MVP: coaches can authenticate, create teams, upload box-score CSV data, track upload jobs, validate stats, calculate useful basketball metrics, and view player/team insights. After the local product is stable, the project can grow into a deeper full-stack CV project with cloud storage, queues, PDF reports, CI, and deployment.
 
 ## MVP Goal
 
@@ -11,9 +11,10 @@ Build the smallest serious version of the product:
 1. Create teams and players.
 2. Upload a game stats CSV.
 3. Validate the CSV with useful error messages.
-4. Store game and player stats.
-5. Calculate basketball metrics.
-6. Show player profile and team dashboard data.
+4. Track upload status with an `UploadJob`.
+5. Store game and player stats.
+6. Calculate basketball metrics.
+7. Show player profile and team dashboard data.
 
 The first impressive milestone is:
 
@@ -71,7 +72,7 @@ Start with the backend analytics core before spending time on deployment.
    Build the upload screen, player profile, and team dashboard.
 
 6. Background processing
-   Move CSV processing into a worker once the synchronous flow works.
+   Track CSV processing with `UploadJob` rows and a worker entrypoint.
 
 7. Docker, CI, and deployment
    Add this after the MVP is usable locally.
@@ -92,7 +93,7 @@ After the MVP:
 
 - Auth with coach/player roles.
 - PostgreSQL and Alembic migrations.
-- Async upload processing with Redis/RQ or Celery.
+- Upload job status tracking and background processing.
 - S3 storage for uploaded CSV files.
 - SQS or cloud worker for processing jobs.
 - PDF match reports.
@@ -100,7 +101,7 @@ After the MVP:
 - Docker Compose local setup.
 - Public deployed demo.
 
-See the `docs/` folder for the roadmap, CSV format, architecture, and metrics plan.
+See the `docs/` folder for the roadmap, CSV format, architecture, metrics plan, and cloud migration path.
 
 ## Current Local Demo
 

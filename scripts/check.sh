@@ -9,10 +9,10 @@ cd "$ROOT_DIR/backend"
 venv/bin/python -m pytest tests -q
 
 cd "$ROOT_DIR/frontend"
-if command -v pnpm >/dev/null 2>&1; then
-  pnpm build
-elif [ -x "$PNPM_BIN/pnpm" ]; then
+if [ -x "$PNPM_BIN/pnpm" ]; then
   PATH="$NODE_BIN:$PNPM_BIN:$PATH" "$PNPM_BIN/pnpm" build
+elif command -v pnpm >/dev/null 2>&1; then
+  PATH="$NODE_BIN:$PATH" pnpm build
 else
   echo "pnpm is required to build the frontend." >&2
   exit 1

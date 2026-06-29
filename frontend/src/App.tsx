@@ -7,6 +7,7 @@ import {
   getMe,
   getPlayerAnalytics,
   getTeamAnalytics,
+  getUploadJob,
   listPlayers,
   listTeams,
   login,
@@ -19,7 +20,7 @@ import { TeamTrendChart } from "./components/charts/TeamTrendChart";
 import { MetricCard } from "./components/layout/MetricCard";
 import { PlayerAnalyticsPanel } from "./components/layout/PlayerAnalyticsPanel";
 import { PlayerTable } from "./components/tables/PlayerTable";
-import type { Player, PlayerAnalytics, Team, TeamAnalytics, UploadResult, User } from "./types/api";
+import type { Player, PlayerAnalytics, Team, TeamAnalytics, UploadJob, UploadResult, User } from "./types/api";
 
 const TOKEN_STORAGE_KEY = "courtiq_access_token";
 
@@ -34,6 +35,7 @@ function App() {
   const [season, setSeason] = useState("2025-26");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
+  const [uploadJob, setUploadJob] = useState<UploadJob | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -64,9 +66,13 @@ function App() {
       setPlayers([]);
       setTeamAnalytics(null);
       setPlayerAnalytics(null);
+      setUploadResult(null);
+      setUploadJob(null);
       return;
     }
 
+    setUploadResult(null);
+    setUploadJob(null);
     void refreshDashboard(selectedTeamId);
   }, [selectedTeamId]);
 
@@ -176,16 +182,56 @@ function App() {
     setIsUploading(true);
     setError(null);
     try {
-      const result = await uploadBoxScore(selectedTeamId, selectedFile, authToken);
-      setUploadResult(result);
+      const job = await uploadBoxScore(selectedTeamId, selectedFile, authToken);
+      setUploadJob(job);
+      setUploadResult(null);
       setSelectedFile(null);
-      setStatusMessage(`${result.rows_processed} rows imported.`);
-      await refreshDashboard(selectedTeamId);
+      setStatusMessage(`Upload job #${job.id} queued.`);
+
+      const finishedJob = await waitForUploadJob(job.id);
+      if (!finishedJob) {
+        setStatusMessage(`Upload job #${job.id} is still processing.`);
+        return;
+      }
+
+      if (finishedJob.status === "completed") {
+        setUploadResult({
+          team_id: finishedJob.team_id,
+          rows_processed: finishedJob.rows_processed,
+          games_created: finishedJob.games_created,
+          players_created: finishedJob.players_created,
+          stats_created: finishedJob.stats_created,
+          stats_updated: finishedJob.stats_updated
+        });
+        setStatusMessage(`${finishedJob.rows_processed} rows imported.`);
+        await refreshDashboard(selectedTeamId);
+      } else {
+        setError(finishedJob.error_message ?? "Upload failed.");
+      }
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
       setIsUploading(false);
     }
+  }
+
+  async function waitForUploadJob(jobId: number) {
+    if (!authToken) {
+      return null;
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const job = await getUploadJob(jobId, authToken);
+      setUploadJob(job);
+
+      if (job.status === "completed" || job.status === "failed") {
+        return job;
+      }
+
+      await sleep(700);
+    }
+
+    return null;
   }
 
   async function handleSeedDemo(reset = false) {
@@ -201,6 +247,7 @@ function App() {
       setTeams(updatedTeams);
       setSelectedTeamId(result.team_id);
       setUploadResult(result.upload);
+      setUploadJob(null);
       setStatusMessage(
         `${result.team_name} ready: ${result.upload.rows_processed} rows, ${result.player_count} players.`
       );
@@ -222,6 +269,7 @@ function App() {
     try {
       const result = await resetDemoData(authToken);
       setUploadResult(null);
+      setUploadJob(null);
       setPlayerAnalytics(null);
       setStatusMessage(`${result.deleted_teams} demo team reset.`);
       const updatedTeams = await listTeams(authToken);
@@ -293,6 +341,7 @@ function App() {
     setTeamAnalytics(null);
     setPlayerAnalytics(null);
     setUploadResult(null);
+    setUploadJob(null);
     setStatusMessage("Signed out.");
   }
 
@@ -431,7 +480,25 @@ function App() {
                 {isUploading ? "Uploading" : "Upload stats"}
               </button>
             </form>
-            {uploadResult ? (
+            {uploadJob ? (
+              <div className="upload-job">
+                <div className="upload-job-heading">
+                  <span className={`job-status ${uploadJob.status}`}>
+                    <span className="status-dot" />
+                    {formatJobStatus(uploadJob.status)}
+                  </span>
+                  <strong>{uploadJob.filename}</strong>
+                  <small>Job #{uploadJob.id}</small>
+                </div>
+                <div className="upload-result">
+                  <span>{uploadJob.rows_processed} rows</span>
+                  <span>{uploadJob.players_created} players</span>
+                  <span>{uploadJob.games_created} games</span>
+                  <span>{uploadJob.stats_updated} updates</span>
+                </div>
+                {uploadJob.error_message ? <p className="job-error">{uploadJob.error_message}</p> : null}
+              </div>
+            ) : uploadResult ? (
               <div className="upload-result">
                 <span>{uploadResult.rows_processed} rows</span>
                 <span>{uploadResult.players_created} players</span>
@@ -498,6 +565,14 @@ function App() {
 
 function toErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
+}
+
+function sleep(milliseconds: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+function formatJobStatus(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 export default App;

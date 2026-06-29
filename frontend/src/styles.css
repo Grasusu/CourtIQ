@@ -373,6 +373,85 @@ input:focus {
   width: 100%;
 }
 
+.upload-job {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  border-top: 1px solid #ece6d8;
+  padding-top: 12px;
+}
+
+.upload-job-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.upload-job-heading strong {
+  color: #242118;
+  font-size: 14px;
+  font-weight: 800;
+  max-width: min(360px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-job-heading small {
+  color: #756f60;
+  font-weight: 720;
+}
+
+.job-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #d8d2c1;
+  border-radius: 999px;
+  background: #fffdf8;
+  color: #4b463a;
+  font-size: 12px;
+  font-weight: 820;
+  min-height: 28px;
+  padding: 5px 9px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.job-status.pending {
+  border-color: #cfc2a5;
+  color: #74613b;
+}
+
+.job-status.processing {
+  border-color: #8ba7c7;
+  color: #285077;
+}
+
+.job-status.completed {
+  border-color: #7ba188;
+  color: #244f39;
+}
+
+.job-status.failed {
+  border-color: #d7834b;
+  color: #7b3510;
+}
+
+.job-error {
+  margin: 0;
+  color: #7b3510;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .demo-actions {
   display: grid;
   grid-template-columns: 1fr;

@@ -6,7 +6,7 @@ import type {
   Team,
   TeamAnalytics,
   TokenResponse,
-  UploadResult
+  UploadJob
 } from "../types/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
@@ -75,15 +75,23 @@ export function listPlayers(teamId: number, authToken: string): Promise<Player[]
   return request<Player[]>(`/teams/${teamId}/players`, { authToken });
 }
 
-export function uploadBoxScore(teamId: number, file: File, authToken: string): Promise<UploadResult> {
+export function uploadBoxScore(teamId: number, file: File, authToken: string): Promise<UploadJob> {
   const formData = new FormData();
   formData.append("file", file);
 
-  return request<UploadResult>(`/teams/${teamId}/uploads/box-score`, {
+  return request<UploadJob>(`/teams/${teamId}/uploads/box-score`, {
     method: "POST",
     authToken,
     body: formData
   });
+}
+
+export function getUploadJob(jobId: number, authToken: string): Promise<UploadJob> {
+  return request<UploadJob>(`/uploads/jobs/${jobId}`, { authToken });
+}
+
+export function listUploadJobs(teamId: number, authToken: string): Promise<UploadJob[]> {
+  return request<UploadJob[]>(`/teams/${teamId}/uploads/jobs`, { authToken });
 }
 
 export function getTeamAnalytics(teamId: number, authToken: string): Promise<TeamAnalytics> {

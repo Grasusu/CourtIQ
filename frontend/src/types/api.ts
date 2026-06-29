@@ -36,6 +36,19 @@ export type UploadResult = {
   stats_updated: number;
 };
 
+export type UploadJobStatus = "pending" | "processing" | "completed" | "failed";
+
+export type UploadJob = UploadResult & {
+  id: number;
+  owner_id: number;
+  filename: string;
+  status: UploadJobStatus;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+};
+
 export type DemoSeedResult = {
   team_id: number;
   team_name: string;

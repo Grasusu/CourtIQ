@@ -9,9 +9,13 @@ CSV upload
    |
 FastAPI endpoint
    |
+Upload storage adapter
+   |
 local file storage
    |
 UploadJob row
+   |
+Upload queue adapter
    |
 BackgroundTasks worker entrypoint
    |
@@ -78,8 +82,8 @@ Do not build the cloud version first. Build the MVP locally, then replace local 
 
 The current local upload pipeline already has the cloud-facing shape:
 
-- `local_uploads/` can become S3 object storage.
-- FastAPI `BackgroundTasks` can become an SQS message.
+- `LocalUploadStorage` can become an S3 storage adapter.
+- `BackgroundUploadQueue` can become an SQS queue adapter.
 - `backend/app/workers/upload_worker.py` can become the worker process.
 - The frontend can keep polling the same upload job endpoints.
 

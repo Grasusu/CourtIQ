@@ -6,8 +6,8 @@ Current local flow:
 
 1. API receives CSV upload.
 2. API creates an `UploadJob`.
-3. API stores the uploaded file locally.
-4. FastAPI `BackgroundTasks` calls `upload_worker.run_upload_job`.
+3. API stores the uploaded file through `LocalUploadStorage`.
+4. `BackgroundUploadQueue` uses FastAPI `BackgroundTasks`.
 5. Worker saves metrics and marks the job completed or failed.
 
 Later cloud flow:

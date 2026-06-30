@@ -23,6 +23,8 @@ This is the current backend MVP slice.
   - importing box-score CSV files
   - creating/listing/tracking upload jobs
   - processing upload jobs through a worker entrypoint
+  - saving uploads through a storage adapter
+  - enqueueing uploads through a queue adapter
   - generating player analytics
   - generating team analytics
 - FastAPI routes for:
@@ -53,6 +55,8 @@ This is the current backend MVP slice.
 - GitHub Actions workflow for backend tests and frontend build.
 - Local `scripts/check.sh` verification script.
 - Local background upload processing with `UploadJob` status tracking.
+- Local upload storage adapter that can be replaced by S3 later.
+- Local upload queue adapter that can be replaced by SQS or Redis later.
 
 ## Frontend Implemented
 
@@ -62,6 +66,7 @@ This is the current backend MVP slice.
 - Team workspace sidebar.
 - CSV upload panel.
 - Upload job status display with completed/failed states.
+- Upload job history panel for recent team imports.
 - Demo load/reload/reset controls.
 - Team metric cards.
 - Team scoring trend chart.
@@ -101,7 +106,7 @@ venv/bin/python -m alembic -c alembic.ini upgrade head
 ## Next Build Slice
 
 1. Replace startup table creation with migration-only setup before deployment.
-2. Add a storage abstraction so local CSV storage can become S3.
-3. Add a queue abstraction so FastAPI `BackgroundTasks` can become SQS or Redis.
+2. Add an S3 implementation behind the upload storage adapter.
+3. Add an SQS or Redis implementation behind the upload queue adapter.
 4. Add PDF report generation for completed games.
 5. Add more frontend pages: game detail, player comparison, and trends.

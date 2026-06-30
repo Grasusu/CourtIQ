@@ -2,7 +2,7 @@
 
 CourtIQ is a basketball analytics platform for coaches and players.
 
-The current version is a focused MVP: coaches can authenticate, create teams, upload box-score CSV data, track upload jobs, validate stats, calculate useful basketball metrics, and view player/team insights. After the local product is stable, the project can grow into a deeper full-stack CV project with cloud storage, queues, PDF reports, CI, and deployment.
+The current version is a focused MVP: coaches can authenticate, create teams, upload box-score CSV data, track upload jobs, validate stats, calculate useful basketball metrics, and view player/team insights. The upload pipeline now uses replaceable local storage and queue adapters, so it can move toward cloud storage and cloud workers without rewriting the product flow.
 
 ## MVP Goal
 
@@ -74,7 +74,10 @@ Start with the backend analytics core before spending time on deployment.
 6. Background processing
    Track CSV processing with `UploadJob` rows and a worker entrypoint.
 
-7. Docker, CI, and deployment
+7. Storage and queue boundaries
+   Keep local adapters first, then add S3/SQS implementations later.
+
+8. Docker, CI, and deployment
    Add this after the MVP is usable locally.
 
 ## Backend MVP Modules
@@ -94,8 +97,8 @@ After the MVP:
 - Auth with coach/player roles.
 - PostgreSQL and Alembic migrations.
 - Upload job status tracking and background processing.
-- S3 storage for uploaded CSV files.
-- SQS or cloud worker for processing jobs.
+- S3 storage adapter for uploaded CSV files.
+- SQS queue adapter or cloud worker for processing jobs.
 - PDF match reports.
 - GitHub Actions test pipeline.
 - Docker Compose local setup.

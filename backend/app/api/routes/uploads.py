@@ -1,14 +1,11 @@
 """Upload routes."""
 
-from os import getenv
-from pathlib import Path
-from uuid import uuid4
-
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.core.database import get_db
+from app.jobs.upload_queue import get_upload_queue
 from app.models.user import User
 from app.schemas.upload import UploadJobRead
 from app.services.upload_service import (
@@ -16,7 +13,7 @@ from app.services.upload_service import (
     get_upload_job,
     list_team_upload_jobs,
 )
-from app.workers.upload_worker import run_upload_job
+from app.storage.uploads import get_upload_storage
 
 
 router = APIRouter(tags=["uploads"])
@@ -33,17 +30,14 @@ async def upload_box_score_route(
     if file.filename and not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV uploads are supported")
 
-    upload_dir = Path(getenv("LOCAL_UPLOAD_DIR", "local_uploads"))
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    upload_path = upload_dir / f"{uuid4()}.csv"
-    upload_path.write_bytes(await file.read())
+    stored_upload = get_upload_storage().save(file.filename, await file.read())
 
     try:
         job = create_upload_job(
             db=db,
             team_id=team_id,
-            filename=file.filename or upload_path.name,
-            stored_path=upload_path,
+            filename=stored_upload.original_filename,
+            stored_path=stored_upload.stored_path,
             owner_id=current_user.id,
         )
     except ValueError as exc:
@@ -52,7 +46,7 @@ async def upload_box_score_route(
 
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    background_tasks.add_task(run_upload_job, job.id)
+    get_upload_queue(background_tasks).enqueue(job.id)
     return job
 
 

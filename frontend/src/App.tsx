@@ -10,6 +10,7 @@ import {
   getUploadJob,
   listPlayers,
   listTeams,
+  listUploadJobs,
   login,
   register,
   resetDemoData,
@@ -36,6 +37,7 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadJob, setUploadJob] = useState<UploadJob | null>(null);
+  const [uploadJobs, setUploadJobs] = useState<UploadJob[]>([]);
   const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -68,12 +70,15 @@ function App() {
       setPlayerAnalytics(null);
       setUploadResult(null);
       setUploadJob(null);
+      setUploadJobs([]);
       return;
     }
 
     setUploadResult(null);
     setUploadJob(null);
+    setUploadJobs([]);
     void refreshDashboard(selectedTeamId);
+    void loadUploadJobs(selectedTeamId);
   }, [selectedTeamId]);
 
   useEffect(() => {
@@ -152,6 +157,20 @@ function App() {
     }
   }
 
+  async function loadUploadJobs(teamId = selectedTeamId) {
+    if (teamId === null || !authToken) {
+      return;
+    }
+
+    setError(null);
+    try {
+      const jobs = await listUploadJobs(teamId, authToken);
+      setUploadJobs(jobs);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    }
+  }
+
   async function handleCreateTeam(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!teamName.trim() || !authToken) {
@@ -184,6 +203,7 @@ function App() {
     try {
       const job = await uploadBoxScore(selectedTeamId, selectedFile, authToken);
       setUploadJob(job);
+      upsertUploadJob(job);
       setUploadResult(null);
       setSelectedFile(null);
       setStatusMessage(`Upload job #${job.id} queued.`);
@@ -208,6 +228,7 @@ function App() {
       } else {
         setError(finishedJob.error_message ?? "Upload failed.");
       }
+      await loadUploadJobs(selectedTeamId);
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
@@ -223,6 +244,7 @@ function App() {
     for (let attempt = 0; attempt < 20; attempt += 1) {
       const job = await getUploadJob(jobId, authToken);
       setUploadJob(job);
+      upsertUploadJob(job);
 
       if (job.status === "completed" || job.status === "failed") {
         return job;
@@ -248,6 +270,7 @@ function App() {
       setSelectedTeamId(result.team_id);
       setUploadResult(result.upload);
       setUploadJob(null);
+      setUploadJobs([]);
       setStatusMessage(
         `${result.team_name} ready: ${result.upload.rows_processed} rows, ${result.player_count} players.`
       );
@@ -270,6 +293,7 @@ function App() {
       const result = await resetDemoData(authToken);
       setUploadResult(null);
       setUploadJob(null);
+      setUploadJobs([]);
       setPlayerAnalytics(null);
       setStatusMessage(`${result.deleted_teams} demo team reset.`);
       const updatedTeams = await listTeams(authToken);
@@ -342,7 +366,15 @@ function App() {
     setPlayerAnalytics(null);
     setUploadResult(null);
     setUploadJob(null);
+    setUploadJobs([]);
     setStatusMessage("Signed out.");
+  }
+
+  function upsertUploadJob(job: UploadJob) {
+    setUploadJobs((currentJobs) => {
+      const otherJobs = currentJobs.filter((currentJob) => currentJob.id !== job.id);
+      return [job, ...otherJobs].slice(0, 8);
+    });
   }
 
   return (
@@ -505,6 +537,43 @@ function App() {
                 <span>{uploadResult.games_created} games</span>
               </div>
             ) : null}
+            <div className="upload-history">
+              <div className="upload-history-heading">
+                <div>
+                  <p className="eyebrow">Upload history</p>
+                  <h3>Recent jobs</h3>
+                </div>
+                <button
+                  className="icon-button"
+                  type="button"
+                  onClick={() => void loadUploadJobs()}
+                  disabled={selectedTeamId === null}
+                  aria-label="Refresh upload jobs"
+                >
+                  <RefreshCw size={16} />
+                </button>
+              </div>
+              <div className="upload-history-list">
+                {uploadJobs.slice(0, 5).map((job) => (
+                  <button
+                    className={uploadJob?.id === job.id ? "upload-history-item active" : "upload-history-item"}
+                    key={job.id}
+                    type="button"
+                    onClick={() => setUploadJob(job)}
+                  >
+                    <span className={`job-status ${job.status}`}>
+                      <span className="status-dot" />
+                      {formatJobStatus(job.status)}
+                    </span>
+                    <span className="upload-history-name">{job.filename}</span>
+                    <span className="upload-history-meta">
+                      {job.rows_processed} rows - {formatJobTime(job.created_at)}
+                    </span>
+                  </button>
+                ))}
+                {uploadJobs.length === 0 ? <div className="empty-state compact">No upload jobs yet.</div> : null}
+              </div>
+            </div>
           </div>
 
           <section className="metric-grid">
@@ -573,6 +642,15 @@ function sleep(milliseconds: number) {
 
 function formatJobStatus(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function formatJobTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 }
 
 export default App;

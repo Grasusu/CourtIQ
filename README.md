@@ -1,24 +1,24 @@
 # CourtIQ
 
-CourtIQ is a basketball analytics platform for coaches and players.
+CourtIQ is a full-stack basketball analytics platform for coaches and players.
 
-The current version is a focused MVP: coaches can authenticate, create teams, upload box-score CSV data, track upload jobs, validate stats, calculate useful basketball metrics, and view player/team insights. The upload pipeline now uses replaceable local storage and queue adapters, so it can move toward cloud storage and cloud workers without rewriting the product flow.
+Coaches can upload box-score CSV data, validate it, store it, and turn it into team and player insights: efficiency metrics, trends, upload history, player summaries, and dashboard views.
 
-## MVP Goal
+The project is built as a serious MVP rather than a simple chart demo. It includes authentication, a relational data model, tested analytics logic, tracked CSV ingestion jobs, and replaceable storage/queue adapters so the upload pipeline can later move from local processing to cloud-backed processing.
 
-Build the smallest serious version of the product:
+## Current Features
 
-1. Create teams and players.
-2. Upload a game stats CSV.
-3. Validate the CSV with useful error messages.
-4. Track upload status with an `UploadJob`.
-5. Store game and player stats.
-6. Calculate basketball metrics.
-7. Show player profile and team dashboard data.
-
-The first impressive milestone is:
-
-> A coach can upload a CSV and view a player's averages, efficiency metrics, recent trend, best/worst game, and a short performance summary.
+- Coach registration/login with JWT authentication.
+- Coach-owned team workspaces.
+- Team and player management.
+- CSV box-score upload with validation.
+- `UploadJob` tracking with `pending`, `processing`, `completed`, and `failed` states.
+- Upload history in the frontend.
+- Team dashboard metrics and scoring trends.
+- Player analytics: averages, efficiency, recent form, best/worst game, and summary text.
+- Demo seed/reset flow for portfolio walkthroughs.
+- Backend tests for metrics, validators, API workflows, storage, queueing, and upload processing.
+- Docker Compose setup with PostgreSQL.
 
 ## Project Structure
 
@@ -44,7 +44,6 @@ CourtIQ/
 │   └── src/
 │       ├── api/
 │       ├── components/
-│       ├── pages/
 │       └── types/
 ├── sample_data/
 ├── docs/
@@ -52,66 +51,21 @@ CourtIQ/
     └── workflows/
 ```
 
-## Build Order
+## Stack
 
-Start with the backend analytics core before spending time on deployment.
+- Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL, PyJWT
+- Analytics: Python, typed CSV validation, tested basketball metrics
+- Frontend: React, TypeScript, Vite
+- DevOps: Docker Compose, GitHub Actions, local verification script
+- Cloud-ready boundaries: local upload storage adapter, local upload queue adapter, worker entrypoint
 
-1. `backend/app/analytics/`
-   Build metrics, trend calculations, CSV validation, and summaries.
-
-2. `backend/tests/`
-   Add tests for every metric and CSV validation rule.
-
-3. `backend/app/models/`
-   Add `Team`, `Player`, `Game`, and `PlayerGameStats`.
-
-4. `backend/app/api/routes/`
-   Add upload, teams, players, and analytics endpoints.
-
-5. `frontend/src/`
-   Build the upload screen, player profile, and team dashboard.
-
-6. Background processing
-   Track CSV processing with `UploadJob` rows and a worker entrypoint.
-
-7. Storage and queue boundaries
-   Keep local adapters first, then add S3/SQS implementations later.
-
-8. Docker, CI, and deployment
-   Add this after the MVP is usable locally.
-
-## Backend MVP Modules
-
-```txt
-analytics/
-├── metrics.py       # points per minute, eFG%, TS%, AST/TO, consistency
-├── trends.py        # rolling averages, improvement/decline, best/worst games
-├── validators.py    # required CSV columns, numeric checks, row-level errors
-└── summaries.py     # readable coach/player performance summaries
-```
-
-## Later CV Depth
-
-After the MVP:
-
-- Auth with coach/player roles.
-- PostgreSQL and Alembic migrations.
-- Upload job status tracking and background processing.
-- S3 storage adapter for uploaded CSV files.
-- SQS queue adapter or cloud worker for processing jobs.
-- PDF match reports.
-- GitHub Actions test pipeline.
-- Docker Compose local setup.
-- Public deployed demo.
-
-See the `docs/` folder for the roadmap, CSV format, architecture, metrics plan, and cloud migration path.
-
-## Current Local Demo
+## Local Demo
 
 Backend:
 
 ```bash
 cd backend
+venv/bin/python -m alembic -c alembic.ini upgrade head
 venv/bin/python -m uvicorn app.main:app --reload
 ```
 
@@ -162,3 +116,15 @@ The backend runs Alembic migrations automatically before starting.
 ```bash
 scripts/check.sh
 ```
+
+## Next Improvements
+
+- Make database startup migration-only for production.
+- Improve the frontend visual polish and responsive dashboard layout.
+- Add game detail and player comparison pages.
+- Add PDF report export.
+- Deploy the frontend on Vercel and the backend on a Python-friendly platform such as Render.
+- Use a managed PostgreSQL database such as Neon or Supabase.
+- Later, replace local upload storage with an object storage provider such as Cloudflare R2 or Supabase Storage.
+
+See `docs/` for architecture notes, CSV format, metrics, backend status, and [deployment planning](docs/deployment.md).

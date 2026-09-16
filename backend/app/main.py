@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+from os import getenv
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,24 +12,25 @@ from app.api.routes import (
     teams_router,
     uploads_router,
 )
-from app.core.database import Base, engine
 from app import models  # noqa: F401
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    yield
+def _cors_origins() -> list[str]:
+    configured_origins = getenv("CORS_ALLOWED_ORIGINS")
+    if configured_origins:
+        return [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+
+    return [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
 
 
-app = FastAPI(title="CourtIQ API", lifespan=lifespan)
+app = FastAPI(title="CourtIQ API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5173",
-        "http://localhost:5173",
-    ],
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

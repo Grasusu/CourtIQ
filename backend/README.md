@@ -2,23 +2,27 @@
 
 FastAPI backend for CourtIQ.
 
-The backend should own authentication, teams, players, CSV uploads, validation, analytics calculations, persistence, and eventually background jobs.
+The backend owns authentication, teams, players, CSV uploads, validation, analytics calculations, persistence, upload job tracking, and local background processing.
 
-## MVP Build Order
+## Main Modules
 
-1. Analytics functions in `app/analytics/`.
-2. CSV validation in `app/analytics/validators.py`.
-3. Database models in `app/models/`.
-4. API routes in `app/api/routes/`.
-5. Service layer in `app/services/`.
-6. Tests in `tests/`.
+- `app/api/routes/` - FastAPI route handlers.
+- `app/analytics/` - basketball metrics and CSV validation.
+- `app/models/` - SQLAlchemy models.
+- `app/schemas/` - Pydantic request/response schemas.
+- `app/services/` - business logic.
+- `app/storage/` - upload storage adapters.
+- `app/jobs/` - upload queue adapters.
+- `app/workers/` - worker entrypoints.
+- `tests/` - API, analytics, upload, storage, and queue tests.
 
 ## Local Run
 
 From this folder:
 
 ```bash
-uvicorn app.main:app --reload
+venv/bin/python -m alembic -c alembic.ini upgrade head
+venv/bin/python -m uvicorn app.main:app --reload
 ```
 
 Then open:
@@ -29,4 +33,4 @@ http://127.0.0.1:8000/docs
 
 ## Important Principle
 
-Keep basketball calculations separate from API routes. The API should call analytics functions; the analytics functions should be testable without starting FastAPI.
+Keep basketball calculations, CSV validation, storage, queueing, and API routing separated. Each part should be testable without starting the full application.

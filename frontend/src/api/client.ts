@@ -10,12 +10,19 @@ import type {
 } from "../types/api";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+const API_READY_WINDOW_MS = 10 * 60 * 1000;
+const API_WAKE_RETRY_DELAYS_MS = [0, 1_500, 3_000, 5_000, 8_000];
+
+let apiReadyUntil = 0;
+let apiWakePromise: Promise<void> | null = null;
 
 type RequestOptions = RequestInit & {
   authToken?: string | null;
 };
 
 async function request<T>(path: string, options?: RequestOptions): Promise<T> {
+  await ensureApiReady();
+
   const headers = new Headers(options?.headers);
   if (!(options?.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
@@ -36,6 +43,47 @@ async function request<T>(path: string, options?: RequestOptions): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+async function ensureApiReady(): Promise<void> {
+  if (Date.now() < apiReadyUntil) {
+    return;
+  }
+
+  if (!apiWakePromise) {
+    apiWakePromise = wakeApi().finally(() => {
+      apiWakePromise = null;
+    });
+  }
+
+  return apiWakePromise;
+}
+
+async function wakeApi(): Promise<void> {
+  for (const delayMs of API_WAKE_RETRY_DELAYS_MS) {
+    if (delayMs > 0) {
+      await sleep(delayMs);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        headers: { Accept: "application/json" }
+      });
+
+      if (response.ok) {
+        apiReadyUntil = Date.now() + API_READY_WINDOW_MS;
+        return;
+      }
+    } catch {
+      // A sleeping Render service can briefly reject cross-origin requests while starting.
+    }
+  }
+
+  throw new Error("CourtIQ API is starting. Please try again in a few seconds.");
+}
+
+function sleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds));
 }
 
 export function register(payload: { email: string; password: string }): Promise<TokenResponse> {

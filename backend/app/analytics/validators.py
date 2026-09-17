@@ -5,7 +5,9 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from datetime import date
+from io import StringIO
 from pathlib import Path
+from typing import TextIO
 
 
 REQUIRED_COLUMNS = [
@@ -71,22 +73,36 @@ def validate_csv(file_path: str | Path) -> None:
 def parse_box_score_csv(file_path: str | Path) -> list[BoxScoreRow]:
     """Validate and parse a box-score CSV into typed rows."""
     path = Path(file_path)
+    with path.open(mode="r", encoding="utf-8-sig", newline="") as file:
+        return _parse_box_score_stream(file)
+
+
+def parse_box_score_content(content: bytes) -> list[BoxScoreRow]:
+    """Validate and parse UTF-8 CSV bytes into typed rows."""
+    try:
+        text = content.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise ValueError("CSV file must use UTF-8 encoding") from exc
+
+    with StringIO(text, newline="") as file:
+        return _parse_box_score_stream(file)
+
+
+def _parse_box_score_stream(file: TextIO) -> list[BoxScoreRow]:
+    reader = csv.DictReader(file)
     parsed_rows: list[BoxScoreRow] = []
 
-    with path.open(mode="r", newline="") as file:
-        reader = csv.DictReader(file)
+    if not reader.fieldnames:
+        raise ValueError("CSV file is missing a header row")
 
-        if not reader.fieldnames:
-            raise ValueError("CSV file is missing a header row")
+    missing = set(REQUIRED_COLUMNS) - set(reader.fieldnames)
+    if missing:
+        raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
 
-        missing = set(REQUIRED_COLUMNS) - set(reader.fieldnames)
-        if missing:
-            raise ValueError(f"Missing required columns: {', '.join(sorted(missing))}")
-
-        for row_number, row in enumerate(reader, start=2):
-            parsed_row = _parse_row(row, row_number)
-            _validate_stat_rules(parsed_row, row)
-            parsed_rows.append(parsed_row)
+    for row_number, row in enumerate(reader, start=2):
+        parsed_row = _parse_row(row, row_number)
+        _validate_stat_rules(parsed_row, row)
+        parsed_rows.append(parsed_row)
 
     return parsed_rows
 

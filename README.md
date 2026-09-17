@@ -6,6 +6,15 @@ Coaches can upload box-score CSV data, validate it, store it, and turn it into t
 
 The project is built as a serious MVP rather than a simple chart demo. It includes authentication, a relational data model, tested analytics logic, tracked CSV ingestion jobs, and replaceable storage/queue adapters so the upload pipeline can later move from local processing to cloud-backed processing.
 
+## Live Demo
+
+- Application: [court-iq-ecru.vercel.app](https://court-iq-ecru.vercel.app/)
+- API documentation: [courtiq-api-jqz4.onrender.com/docs](https://courtiq-api-jqz4.onrender.com/docs)
+- Demo email: `coach@example.com`
+- Demo password: `strong-password`
+
+The Render Free backend sleeps after inactivity, so the first action can take a little longer while the API starts.
+
 ## Current Features
 
 - Coach registration/login with JWT authentication.
@@ -19,6 +28,8 @@ The project is built as a serious MVP rather than a simple chart demo. It includ
 - Demo seed/reset flow for portfolio walkthroughs.
 - Backend tests for metrics, validators, API workflows, storage, queueing, and upload processing.
 - Docker Compose setup with PostgreSQL.
+- Public deployment using Vercel, Render, and Supabase PostgreSQL.
+- Optional Supabase Storage adapter for persistent private CSV storage.
 
 ## Project Structure
 
@@ -56,8 +67,8 @@ CourtIQ/
 - Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL, PyJWT
 - Analytics: Python, typed CSV validation, tested basketball metrics
 - Frontend: React, TypeScript, Vite
-- DevOps: Docker Compose, GitHub Actions, local verification script
-- Cloud-ready boundaries: local upload storage adapter, local upload queue adapter, worker entrypoint
+- DevOps: Docker Compose, GitHub Actions, Render, Vercel, local verification script
+- Cloud: Supabase PostgreSQL with local and Supabase upload storage adapters
 
 ## Local Demo
 
@@ -119,12 +130,10 @@ scripts/check.sh
 
 ## Next Improvements
 
-- Make database startup migration-only for production.
 - Improve the frontend visual polish and responsive dashboard layout.
 - Add game detail and player comparison pages.
 - Add PDF report export.
-- Deploy the frontend on Vercel and the backend on a Python-friendly platform such as Render.
-- Use a managed PostgreSQL database such as Neon or Supabase.
-- Later, replace local upload storage with an object storage provider such as Cloudflare R2 or Supabase Storage.
+- Enable the prepared Supabase Storage adapter in production.
+- Replace in-process background tasks with a durable external queue.
 
 See `docs/` for architecture notes, CSV format, metrics, backend status, and [deployment planning](docs/deployment.md).

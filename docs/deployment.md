@@ -79,8 +79,29 @@ VITE_API_BASE_URL=https://your-render-api.onrender.com
 
 After Vercel gives you the frontend URL, add it to `CORS_ALLOWED_ORIGINS` in Render and redeploy the backend.
 
-## 4. Later: Supabase Storage
+## 4. Supabase Storage
 
-The current app has a local upload storage adapter. A future `SupabaseUploadStorage` adapter can replace local disk storage and save CSV files in a private Supabase Storage bucket.
+The backend includes both local and Supabase upload storage adapters. To enable persistent CSV storage:
 
-Do this after the public demo works with Vercel + Render + Supabase Postgres.
+1. In Supabase, open Storage and create a private bucket named `courtiq-uploads`.
+2. In Supabase project settings, create or copy a server-side secret key.
+3. Add the following environment variables to the Render backend:
+
+```txt
+UPLOAD_STORAGE_BACKEND=supabase
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_...
+SUPABASE_STORAGE_BUCKET=courtiq-uploads
+```
+
+4. Redeploy the Render service and test one CSV upload.
+
+The secret key bypasses Storage RLS and must exist only in Render. Never add it to Vercel, the frontend, GitHub, or a local file that is committed.
+
+Stored object paths are isolated by CourtIQ user and team:
+
+```txt
+users/{owner_id}/teams/{team_id}/{generated_file_id}.csv
+```
+
+If `UPLOAD_STORAGE_BACKEND` is omitted or set to `local`, the backend continues to use `LOCAL_UPLOAD_DIR`.

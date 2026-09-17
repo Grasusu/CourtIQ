@@ -6,7 +6,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.analytics.validators import BoxScoreRow, parse_box_score_csv
+from app.analytics.validators import BoxScoreRow, parse_box_score_content, parse_box_score_csv
 from app.core.database import SessionLocal
 from app.models.game import Game
 from app.models.player import Player
@@ -14,6 +14,7 @@ from app.models.player_game_stats import PlayerGameStats
 from app.models.team import Team
 from app.models.upload_job import UploadJob
 from app.schemas.upload import UploadResult
+from app.storage.uploads import UploadStorage, get_upload_storage
 
 
 UPLOAD_STATUS_PENDING = "pending"
@@ -28,6 +29,26 @@ def import_box_score_csv(
     file_path: str | Path,
     owner_id: int | None = None,
 ) -> UploadResult:
+    rows = parse_box_score_csv(file_path)
+    return _import_box_score_rows(db, team_id, rows, owner_id)
+
+
+def import_box_score_content(
+    db: Session,
+    team_id: int,
+    content: bytes,
+    owner_id: int | None = None,
+) -> UploadResult:
+    rows = parse_box_score_content(content)
+    return _import_box_score_rows(db, team_id, rows, owner_id)
+
+
+def _import_box_score_rows(
+    db: Session,
+    team_id: int,
+    rows: list[BoxScoreRow],
+    owner_id: int | None,
+) -> UploadResult:
     query = select(Team).where(Team.id == team_id)
     if owner_id is not None:
         query = query.where(Team.owner_id == owner_id)
@@ -35,8 +56,6 @@ def import_box_score_csv(
     team = db.scalar(query)
     if team is None:
         raise ValueError(f"Team {team_id} does not exist")
-
-    rows = parse_box_score_csv(file_path)
 
     players = {
         player.name.casefold(): player
@@ -148,7 +167,11 @@ def process_upload_job(job_id: int) -> None:
         db.close()
 
 
-def process_upload_job_in_session(db: Session, job_id: int) -> UploadJob | None:
+def process_upload_job_in_session(
+    db: Session,
+    job_id: int,
+    storage: UploadStorage | None = None,
+) -> UploadJob | None:
     job = db.get(UploadJob, job_id)
     if job is None:
         return None
@@ -159,7 +182,9 @@ def process_upload_job_in_session(db: Session, job_id: int) -> UploadJob | None:
     db.commit()
 
     try:
-        result = import_box_score_csv(db, job.team_id, job.stored_path, owner_id=job.owner_id)
+        upload_storage = storage or get_upload_storage()
+        content = upload_storage.read(job.stored_path)
+        result = import_box_score_content(db, job.team_id, content, owner_id=job.owner_id)
     except Exception as exc:
         db.rollback()
         failed_job = db.get(UploadJob, job_id)

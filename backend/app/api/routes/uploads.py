@@ -14,6 +14,7 @@ from app.services.upload_service import (
     list_team_upload_jobs,
 )
 from app.storage.uploads import get_upload_storage
+from app.services.team_service import get_team
 
 
 router = APIRouter(tags=["uploads"])
@@ -30,7 +31,14 @@ async def upload_box_score_route(
     if file.filename and not file.filename.lower().endswith(".csv"):
         raise HTTPException(status_code=400, detail="Only CSV uploads are supported")
 
-    stored_upload = get_upload_storage().save(file.filename, await file.read())
+    if get_team(db, team_id, owner_id=current_user.id) is None:
+        raise HTTPException(status_code=404, detail=f"Team {team_id} does not exist")
+
+    stored_upload = get_upload_storage().save(
+        file.filename,
+        await file.read(),
+        namespace=f"users/{current_user.id}/teams/{team_id}",
+    )
 
     try:
         job = create_upload_job(

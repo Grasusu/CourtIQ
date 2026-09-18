@@ -27,6 +27,8 @@ This is the current backend MVP slice.
   - enqueueing uploads through a queue adapter
   - generating player analytics
   - generating team analytics
+  - comparing two to four players
+  - building detailed game box scores and team totals
 - FastAPI routes for:
   - `GET /health`
   - `POST /auth/register`
@@ -43,6 +45,8 @@ This is the current backend MVP slice.
   - `GET /teams/{team_id}/uploads/jobs`
   - `GET /players/{player_id}/analytics`
   - `GET /teams/{team_id}/analytics`
+  - `GET /teams/{team_id}/player-comparison`
+  - `GET /games/{game_id}`
   - `POST /demo/seed`
   - `DELETE /demo/reset`
 - API workflow tests with `TestClient`.
@@ -72,6 +76,9 @@ This is the current backend MVP slice.
 - Team scoring trend chart.
 - Player table.
 - Player analytics panel.
+- Player comparison workspace.
+- Game log with complete box-score details.
+- Manual player creation form.
 
 ## Local Run
 
@@ -105,8 +112,7 @@ venv/bin/python -m alembic -c alembic.ini upgrade head
 
 ## Next Build Slice
 
-1. Replace startup table creation with migration-only setup before deployment.
-2. Add an S3 implementation behind the upload storage adapter.
-3. Add an SQS or Redis implementation behind the upload queue adapter.
-4. Add PDF report generation for completed games.
-5. Add more frontend pages: game detail, player comparison, and trends.
+1. Add PDF report generation for completed games.
+2. Add an external queue implementation behind the upload queue adapter.
+3. Add rate limiting and audit logs.
+4. Add coach/player role-specific permissions.

@@ -25,11 +25,14 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 - Upload history in the frontend.
 - Team dashboard metrics and scoring trends.
 - Player analytics: averages, efficiency, recent form, best/worst game, and summary text.
+- Two-to-four player comparison with metric leaders and authenticated team boundaries.
+- Game log with team totals, complete player box scores, and shooting efficiency.
+- Manual roster management from the coach workspace.
 - Demo seed/reset flow for portfolio walkthroughs.
 - Backend tests for metrics, validators, API workflows, storage, queueing, and upload processing.
 - Docker Compose setup with PostgreSQL.
 - Public deployment using Vercel, Render, and Supabase PostgreSQL.
-- Optional Supabase Storage adapter for persistent private CSV storage.
+- Persistent private CSV storage using Supabase Storage in production.
 
 ## Project Structure
 
@@ -130,10 +133,8 @@ scripts/check.sh
 
 ## Next Improvements
 
-- Improve the frontend visual polish and responsive dashboard layout.
-- Add game detail and player comparison pages.
 - Add PDF report export.
-- Enable the prepared Supabase Storage adapter in production.
 - Replace in-process background tasks with a durable external queue.
+- Add rate limiting, audit logs, and richer role permissions.
 
 See `docs/` for architecture notes, CSV format, metrics, backend status, and [deployment planning](docs/deployment.md).

@@ -35,6 +35,8 @@ Goal: expose dashboard-ready data.
 - Recent trend endpoint.
 - Comparison endpoint.
 
+Status: complete, including authenticated player comparison and detailed game endpoints.
+
 ## Phase 5: Frontend MVP
 
 Goal: make the project demoable.
@@ -43,8 +45,11 @@ Goal: make the project demoable.
 - Team dashboard.
 - Player profile page.
 - Simple charts and stat cards.
+- Player comparison view.
+- Game log and box-score detail view.
+- Manual roster controls.
 
-Status: first frontend MVP is implemented with Vite, React, TypeScript, local API integration, team analytics, player analytics, and CSV upload.
+Status: complete with Vite, React, TypeScript, team/player analytics, CSV uploads, comparison, and game details.
 
 ## Phase 6: Product Hardening
 

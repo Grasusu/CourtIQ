@@ -5,7 +5,7 @@ These features should come after the MVP works.
 ## Backend Depth
 
 - JWT auth.
-- Coach/player roles.
+- Coach authentication and owned team workspaces.
 - PostgreSQL database.
 - Alembic migrations.
 - Background upload processing with a local worker entrypoint.
@@ -26,7 +26,7 @@ These features should come after the MVP works.
 ## Cloud Depth
 
 - Docker Compose for local development.
-- S3 for CSV storage.
+- Supabase private object storage for CSV uploads.
 - SQS or Redis-backed queue.
 - Worker process for async analytics.
 - CI with GitHub Actions.
@@ -35,7 +35,7 @@ These features should come after the MVP works.
 ## Current Cloud-Ready Pieces
 
 - `UploadJob` table stores job metadata, status, counters, and failure messages.
-- Upload endpoint stores CSV files through `LocalUploadStorage`.
+- Upload endpoint stores CSV files through local or Supabase storage adapters.
 - Upload endpoint queues work through `BackgroundUploadQueue`.
 - `backend/app/workers/upload_worker.py` exposes a worker entrypoint that can later be called by SQS/Celery/RQ.
 - Frontend polls upload job status and shows recent upload jobs, so the UI is already compatible with cloud workers.
@@ -43,5 +43,5 @@ These features should come after the MVP works.
 ## CV Bullet Target
 
 ```txt
-Built and deployed CourtIQ, a full-stack basketball analytics platform using FastAPI, PostgreSQL, React, Docker, and cloud storage; implemented authenticated team workspaces, CSV ingestion, advanced player efficiency metrics, async processing, and a tested REST API.
+Built and deployed CourtIQ, a full-stack basketball analytics platform using FastAPI, PostgreSQL, React, Docker, Vercel, Render, and Supabase; implemented authenticated team workspaces, persistent CSV ingestion, advanced efficiency metrics, player comparison, game reports, async processing, and a tested REST API.
 ```

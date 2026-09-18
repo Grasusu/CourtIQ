@@ -107,7 +107,7 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
     assert job_response.status_code == 200
     completed_job = job_response.json()
     assert completed_job["status"] == "completed"
-    assert completed_job["rows_processed"] == 6
+    assert completed_job["rows_processed"] == 24
 
     jobs_response = api_client.get(f"/teams/{team_id}/uploads/jobs", headers=headers)
     assert jobs_response.status_code == 200
@@ -115,7 +115,7 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
 
     players_response = api_client.get(f"/teams/{team_id}/players", headers=headers)
     assert players_response.status_code == 200
-    assert len(players_response.json()) == 1
+    assert len(players_response.json()) == 4
 
     player_id = players_response.json()[0]["id"]
     player_analytics_response = api_client.get(f"/players/{player_id}/analytics", headers=headers)
@@ -126,8 +126,84 @@ def test_upload_csv_and_read_player_and_team_analytics(api_client):
     team_analytics_response = api_client.get(f"/teams/{team_id}/analytics", headers=headers)
     assert team_analytics_response.status_code == 200
     assert team_analytics_response.json()["games_played"] == 6
-    assert team_analytics_response.json()["roster_size"] == 1
+    assert team_analytics_response.json()["roster_size"] == 4
     assert team_analytics_response.json()["top_scorers"][0]["player_name"] == "Alex"
+
+
+def test_compare_players_and_read_game_detail(api_client):
+    headers = auth_headers(api_client)
+    seed_response = api_client.post("/demo/seed", headers=headers)
+    assert seed_response.status_code == 201
+    team_id = seed_response.json()["team_id"]
+
+    players_response = api_client.get(f"/teams/{team_id}/players", headers=headers)
+    players = players_response.json()
+    selected_ids = [players[0]["id"], players[1]["id"]]
+
+    comparison_response = api_client.get(
+        f"/teams/{team_id}/player-comparison",
+        params=[("player_ids", player_id) for player_id in selected_ids],
+        headers=headers,
+    )
+    assert comparison_response.status_code == 200
+    comparison = comparison_response.json()
+    assert comparison["team_id"] == team_id
+    assert [player["player_id"] for player in comparison["players"]] == selected_ids
+    assert all(player["games_played"] == 6 for player in comparison["players"])
+
+    games_response = api_client.get(f"/teams/{team_id}/games", headers=headers)
+    assert games_response.status_code == 200
+    game_id = games_response.json()[0]["id"]
+
+    detail_response = api_client.get(f"/games/{game_id}", headers=headers)
+    assert detail_response.status_code == 200
+    detail = detail_response.json()
+    assert detail["id"] == game_id
+    assert len(detail["player_stats"]) == 4
+    assert detail["team_totals"]["points"] == sum(
+        stat["points"] for stat in detail["player_stats"]
+    )
+    assert detail["player_stats"][0]["points"] >= detail["player_stats"][1]["points"]
+
+
+def test_comparison_rejects_duplicate_or_foreign_players(api_client):
+    headers = auth_headers(api_client)
+    first_team = api_client.post(
+        "/teams",
+        json={"name": "First Team", "season": "2025-26"},
+        headers=headers,
+    ).json()
+    second_team = api_client.post(
+        "/teams",
+        json={"name": "Second Team", "season": "2025-26"},
+        headers=headers,
+    ).json()
+    first_player = api_client.post(
+        f"/teams/{first_team['id']}/players",
+        json={"name": "Alex"},
+        headers=headers,
+    ).json()
+    second_player = api_client.post(
+        f"/teams/{second_team['id']}/players",
+        json={"name": "Maya"},
+        headers=headers,
+    ).json()
+
+    duplicate_response = api_client.get(
+        f"/teams/{first_team['id']}/player-comparison",
+        params=[("player_ids", first_player["id"]), ("player_ids", first_player["id"])],
+        headers=headers,
+    )
+    assert duplicate_response.status_code == 400
+    assert duplicate_response.json()["detail"] == "Select each player only once"
+
+    foreign_response = api_client.get(
+        f"/teams/{first_team['id']}/player-comparison",
+        params=[("player_ids", first_player["id"]), ("player_ids", second_player["id"])],
+        headers=headers,
+    )
+    assert foreign_response.status_code == 400
+    assert foreign_response.json()["detail"] == "Every selected player must belong to this team"
 
 
 def test_upload_job_tracks_validation_failure(api_client):
@@ -190,8 +266,8 @@ def test_seed_and_reset_demo_data(api_client):
     assert seed_response.status_code == 201
     seeded = seed_response.json()
     assert seeded["team_name"] == "CourtIQ Demo"
-    assert seeded["upload"]["rows_processed"] == 6
-    assert seeded["player_count"] == 1
+    assert seeded["upload"]["rows_processed"] == 24
+    assert seeded["player_count"] == 4
 
     teams_response = api_client.get("/teams", headers=headers)
     assert teams_response.status_code == 200
@@ -199,7 +275,7 @@ def test_seed_and_reset_demo_data(api_client):
 
     second_seed_response = api_client.post("/demo/seed", headers=headers)
     assert second_seed_response.status_code == 201
-    assert second_seed_response.json()["upload"]["stats_updated"] == 6
+    assert second_seed_response.json()["upload"]["stats_updated"] == 24
 
     reset_response = api_client.delete("/demo/reset", headers=headers)
     assert reset_response.status_code == 200

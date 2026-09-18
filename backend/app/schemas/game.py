@@ -20,3 +20,46 @@ class GameRead(GameBase):
     id: int
     team_id: int
     created_at: datetime
+
+
+class GamePlayerStatsRead(BaseModel):
+    player_id: int
+    player_name: str
+    minutes: float
+    points: int
+    rebounds: int
+    assists: int
+    steals: int
+    blocks: int
+    turnovers: int
+    fgm: int
+    fga: int
+    three_pm: int
+    three_pa: int
+    ftm: int
+    fta: int
+    true_shooting_percentage: float
+    effective_field_goal_percentage: float
+
+
+class GameTeamTotals(BaseModel):
+    minutes: float
+    points: int
+    rebounds: int
+    assists: int
+    steals: int
+    blocks: int
+    turnovers: int
+    fgm: int
+    fga: int
+    three_pm: int
+    three_pa: int
+    ftm: int
+    fta: int
+    true_shooting_percentage: float
+    effective_field_goal_percentage: float
+
+
+class GameDetailRead(GameRead):
+    player_stats: list[GamePlayerStatsRead]
+    team_totals: GameTeamTotals

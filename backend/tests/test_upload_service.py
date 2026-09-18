@@ -114,7 +114,7 @@ def test_team_analytics_after_multi_game_import(db_session):
 
     assert analytics is not None
     assert analytics.games_played == 6
-    assert analytics.roster_size == 1
-    assert analytics.average_team_points == 20.67
+    assert analytics.roster_size == 4
+    assert analytics.average_team_points == 65.17
     assert analytics.top_scorers[0].player_name == "Alex"
     assert len(analytics.game_trends) == 6

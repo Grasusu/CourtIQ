@@ -2,6 +2,7 @@
 
 from app.schemas.analytics import (
     PlayerAnalyticsRead,
+    PlayerComparisonRead,
     PlayerGameInsight,
     TeamAnalyticsRead,
     TeamPlayerSummary,
@@ -9,7 +10,7 @@ from app.schemas.analytics import (
 )
 from app.schemas.auth import TokenRead, UserCreate, UserLogin, UserRead
 from app.schemas.demo import DemoResetResult, DemoSeedResult
-from app.schemas.game import GameCreate, GameRead
+from app.schemas.game import GameCreate, GameDetailRead, GamePlayerStatsRead, GameRead, GameTeamTotals
 from app.schemas.player import PlayerCreate, PlayerRead
 from app.schemas.player_game_stats import PlayerGameStatsCreate, PlayerGameStatsRead
 from app.schemas.team import TeamCreate, TeamRead
@@ -17,11 +18,15 @@ from app.schemas.upload import UploadResult
 
 __all__ = [
     "GameCreate",
+    "GameDetailRead",
+    "GamePlayerStatsRead",
     "GameRead",
+    "GameTeamTotals",
     "TokenRead",
     "DemoResetResult",
     "DemoSeedResult",
     "PlayerAnalyticsRead",
+    "PlayerComparisonRead",
     "PlayerCreate",
     "PlayerGameInsight",
     "PlayerGameStatsCreate",

@@ -71,3 +71,9 @@ class TeamAnalyticsRead(BaseModel):
     top_scorers: list[TeamPlayerSummary]
     game_trends: list[TeamTrendPoint]
     summary: str
+
+
+class PlayerComparisonRead(BaseModel):
+    team_id: int
+    team_name: str
+    players: list[PlayerAnalyticsRead]

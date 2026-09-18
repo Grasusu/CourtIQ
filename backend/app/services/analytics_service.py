@@ -21,11 +21,49 @@ from app.models.player_game_stats import PlayerGameStats
 from app.models.team import Team
 from app.schemas.analytics import (
     PlayerAnalyticsRead,
+    PlayerComparisonRead,
     PlayerGameInsight,
     TeamAnalyticsRead,
     TeamPlayerSummary,
     TeamTrendPoint,
 )
+
+
+def get_player_comparison(
+    db: Session,
+    team_id: int,
+    player_ids: list[int],
+    owner_id: int,
+) -> PlayerComparisonRead | None:
+    team = db.scalar(select(Team).where(Team.id == team_id, Team.owner_id == owner_id))
+    if team is None:
+        return None
+
+    unique_player_ids = list(dict.fromkeys(player_ids))
+    if len(unique_player_ids) != len(player_ids):
+        raise ValueError("Select each player only once")
+
+    team_player_ids = set(
+        db.scalars(
+            select(Player.id).where(
+                Player.team_id == team_id,
+                Player.id.in_(unique_player_ids),
+            )
+        ).all()
+    )
+    if team_player_ids != set(unique_player_ids):
+        raise ValueError("Every selected player must belong to this team")
+
+    analytics = [
+        get_player_analytics(db, player_id, owner_id=owner_id)
+        for player_id in unique_player_ids
+    ]
+
+    return PlayerComparisonRead(
+        team_id=team.id,
+        team_name=team.name,
+        players=[player for player in analytics if player is not None],
+    )
 
 
 def get_player_analytics(db: Session, player_id: int, owner_id: int | None = None) -> PlayerAnalyticsRead | None:

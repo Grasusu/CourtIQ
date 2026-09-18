@@ -1,7 +1,25 @@
 game_date,opponent,player,minutes,points,rebounds,assists,steals,blocks,turnovers,fgm,fga,three_pm,three_pa,ftm,fta
 2026-02-12,Ajax Wolves,Alex,31,18,5,7,2,1,3,7,14,2,5,2,3
+2026-02-12,Ajax Wolves,Maya Chen,28,14,8,3,1,2,2,5,11,1,3,3,4
+2026-02-12,Ajax Wolves,Jamal Carter,26,11,4,5,2,0,1,4,9,2,5,1,2
+2026-02-12,Ajax Wolves,Nora Ionescu,24,9,7,2,1,1,2,4,8,1,2,0,0
 2026-02-19,Utrecht Lions,Alex,34,22,6,6,1,0,2,8,16,3,7,3,4
+2026-02-19,Utrecht Lions,Maya Chen,30,18,10,4,1,2,2,7,13,2,4,2,3
+2026-02-19,Utrecht Lions,Jamal Carter,27,13,3,7,3,0,2,5,10,2,4,1,2
+2026-02-19,Utrecht Lions,Nora Ionescu,25,8,9,3,0,2,1,3,7,0,1,2,2
 2026-02-26,Rotterdam Hawks,Alex,29,14,4,8,2,1,2,5,12,2,6,2,2
+2026-02-26,Rotterdam Hawks,Maya Chen,32,21,11,2,2,1,3,8,15,2,5,3,4
+2026-02-26,Rotterdam Hawks,Jamal Carter,29,16,5,6,1,0,2,6,12,3,6,1,2
+2026-02-26,Rotterdam Hawks,Nora Ionescu,23,10,8,2,1,3,1,4,9,0,1,2,3
 2026-03-05,Leiden Bears,Alex,33,24,7,5,3,0,4,9,18,4,9,2,3
+2026-03-05,Leiden Bears,Maya Chen,29,16,9,5,2,2,1,6,12,1,3,3,4
+2026-03-05,Leiden Bears,Jamal Carter,31,19,4,8,2,0,3,7,14,3,7,2,2
+2026-03-05,Leiden Bears,Nora Ionescu,26,12,10,3,1,2,2,5,10,1,2,1,2
 2026-03-12,Haarlem Tigers,Alex,30,20,5,9,2,1,2,7,13,3,6,3,4
+2026-03-12,Haarlem Tigers,Maya Chen,31,19,12,4,1,1,2,7,14,2,5,3,3
+2026-03-12,Haarlem Tigers,Jamal Carter,28,15,6,7,2,1,2,6,11,2,5,1,2
+2026-03-12,Haarlem Tigers,Nora Ionescu,27,11,11,4,1,3,1,5,9,1,2,0,0
 2026-03-19,Den Haag Eagles,Alex,32,26,6,7,1,1,3,10,19,4,8,2,2
+2026-03-19,Den Haag Eagles,Maya Chen,33,23,13,5,2,2,2,9,16,2,5,3,4
+2026-03-19,Den Haag Eagles,Jamal Carter,30,18,5,9,3,0,1,7,13,3,6,1,2
+2026-03-19,Den Haag Eagles,Nora Ionescu,25,14,9,3,2,2,2,6,11,1,3,1,2

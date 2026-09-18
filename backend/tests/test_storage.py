@@ -92,3 +92,26 @@ def test_get_upload_storage_rejects_incomplete_supabase_config(monkeypatch):
 
     with pytest.raises(RuntimeError, match="not fully configured"):
         get_upload_storage()
+
+
+def test_supabase_storage_error_includes_safe_api_detail(monkeypatch):
+    def fake_request(method, url, *, headers, content, timeout):
+        request = httpx.Request(method, url)
+        return httpx.Response(
+            400,
+            request=request,
+            json={"error": "InvalidRequest", "message": "Unsupported content type"},
+        )
+
+    monkeypatch.setattr("app.storage.uploads.httpx.request", fake_request)
+    storage = SupabaseUploadStorage(
+        "https://project.supabase.co",
+        "sb_secret_test",
+        bucket="courtiq-uploads",
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="400: InvalidRequest - Unsupported content type",
+    ):
+        storage.save("stats.csv", b"game_date,player\n")

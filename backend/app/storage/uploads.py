@@ -168,6 +168,27 @@ def _raise_for_storage_error(response: httpx.Response, action: str) -> None:
     try:
         response.raise_for_status()
     except httpx.HTTPStatusError as exc:
+        detail = _storage_error_detail(response)
+        detail_suffix = f": {detail}" if detail else ""
         raise RuntimeError(
             f"Supabase Storage {action} failed with status {response.status_code}"
+            f"{detail_suffix}"
         ) from exc
+
+
+def _storage_error_detail(response: httpx.Response) -> str:
+    try:
+        payload = response.json()
+    except ValueError:
+        return ""
+
+    if not isinstance(payload, dict):
+        return ""
+
+    details: list[str] = []
+    for field in ("error", "message", "code"):
+        value = payload.get(field)
+        if isinstance(value, (str, int)) and str(value).strip():
+            details.append(str(value).strip())
+
+    return " - ".join(dict.fromkeys(details))[:300]

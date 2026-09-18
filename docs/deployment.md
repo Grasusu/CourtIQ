@@ -84,19 +84,19 @@ After Vercel gives you the frontend URL, add it to `CORS_ALLOWED_ORIGINS` in Ren
 The backend includes both local and Supabase upload storage adapters. To enable persistent CSV storage:
 
 1. In Supabase, open Storage and create a private bucket named `courtiq-uploads`.
-2. In Supabase project settings, create or copy a server-side secret key.
+2. In Supabase project settings, open **API Keys > Legacy anon, service_role API keys** and copy the server-only `service_role` key. The direct Storage REST endpoint currently requires this JWT in its bearer authorization header.
 3. Add the following environment variables to the Render backend:
 
 ```txt
 UPLOAD_STORAGE_BACKEND=supabase
 SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_SECRET_KEY=sb_secret_...
+SUPABASE_SECRET_KEY=your-service-role-jwt
 SUPABASE_STORAGE_BUCKET=courtiq-uploads
 ```
 
 4. Redeploy the Render service and test one CSV upload.
 
-The secret key bypasses Storage RLS and must exist only in Render. Never add it to Vercel, the frontend, GitHub, or a local file that is committed.
+The service-role key bypasses Storage RLS and must exist only in Render. Never add it to Vercel, the frontend, GitHub, or a local file that is committed. Revisit this credential when Supabase removes legacy JWT keys or the Storage REST endpoint fully supports `sb_secret_...` keys without a separate bearer token.
 
 Stored object paths are isolated by CourtIQ user and team:
 

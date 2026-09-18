@@ -18,3 +18,11 @@ services:
         sync: false
       - key: LOCAL_UPLOAD_DIR
         value: local_uploads
+      - key: UPLOAD_STORAGE_BACKEND
+        value: supabase
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: SUPABASE_STORAGE_BUCKET
+        value: courtiq-uploads

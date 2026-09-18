@@ -1,5 +1,7 @@
 """Upload routes."""
 
+import logging
+
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
@@ -18,6 +20,7 @@ from app.services.team_service import get_team
 
 
 router = APIRouter(tags=["uploads"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/teams/{team_id}/uploads/box-score", response_model=UploadJobRead, status_code=201)
@@ -34,11 +37,18 @@ async def upload_box_score_route(
     if get_team(db, team_id, owner_id=current_user.id) is None:
         raise HTTPException(status_code=404, detail=f"Team {team_id} does not exist")
 
-    stored_upload = get_upload_storage().save(
-        file.filename,
-        await file.read(),
-        namespace=f"users/{current_user.id}/teams/{team_id}",
-    )
+    try:
+        stored_upload = get_upload_storage().save(
+            file.filename,
+            await file.read(),
+            namespace=f"users/{current_user.id}/teams/{team_id}",
+        )
+    except RuntimeError as exc:
+        logger.exception("Upload storage failed for team %s", team_id)
+        raise HTTPException(
+            status_code=502,
+            detail="Upload storage is temporarily unavailable",
+        ) from exc
 
     try:
         job = create_upload_job(

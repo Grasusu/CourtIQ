@@ -31,7 +31,7 @@ Then open:
 http://127.0.0.1:8000/docs
 ```
 
-Uploads use local storage by default. Set `UPLOAD_STORAGE_BACKEND=supabase` together with `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `SUPABASE_STORAGE_BUCKET` to use the private Supabase Storage adapter in production.
+Uploads use local storage by default. Set `UPLOAD_STORAGE_BACKEND=supabase` together with `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, and `SUPABASE_STORAGE_BUCKET` to use the private Supabase Storage adapter in production. For direct Storage REST access, `SUPABASE_SECRET_KEY` must be the server-only `service_role` JWT from the legacy API keys page so the adapter can send the required bearer authorization header.
 
 ## Important Principle
 

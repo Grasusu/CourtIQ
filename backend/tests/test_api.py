@@ -155,6 +155,34 @@ def test_upload_job_tracks_validation_failure(api_client):
     assert "Missing required columns" in failed_job["error_message"]
 
 
+def test_upload_returns_bad_gateway_when_storage_is_unavailable(api_client, monkeypatch):
+    headers = auth_headers(api_client)
+    team_response = api_client.post(
+        "/teams",
+        json={"name": "CourtIQ Demo", "season": "2025-26"},
+        headers=headers,
+    )
+    team_id = team_response.json()["id"]
+
+    class UnavailableStorage:
+        def save(self, filename, content, namespace=None):
+            raise RuntimeError("storage provider unavailable")
+
+    monkeypatch.setattr(
+        "app.api.routes.uploads.get_upload_storage",
+        lambda: UnavailableStorage(),
+    )
+
+    response = api_client.post(
+        f"/teams/{team_id}/uploads/box-score",
+        files={"file": ("stats.csv", b"game_date,player\n", "text/csv")},
+        headers=headers,
+    )
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Upload storage is temporarily unavailable"
+
+
 def test_seed_and_reset_demo_data(api_client):
     headers = auth_headers(api_client)
     seed_response = api_client.post("/demo/seed", headers=headers)

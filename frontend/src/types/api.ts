@@ -91,6 +91,47 @@ export type PlayerAnalytics = {
   summary: string;
 };
 
+export type PlayerComparison = {
+  team_id: number;
+  team_name: string;
+  players: PlayerAnalytics[];
+};
+
+export type Game = {
+  id: number;
+  team_id: number;
+  game_date: string;
+  opponent: string;
+  created_at: string;
+};
+
+export type GamePlayerStats = {
+  player_id: number;
+  player_name: string;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgm: number;
+  fga: number;
+  three_pm: number;
+  three_pa: number;
+  ftm: number;
+  fta: number;
+  true_shooting_percentage: number;
+  effective_field_goal_percentage: number;
+};
+
+export type GameTeamTotals = Omit<GamePlayerStats, "player_id" | "player_name">;
+
+export type GameDetail = Game & {
+  player_stats: GamePlayerStats[];
+  team_totals: GameTeamTotals;
+};
+
 export type TeamPlayerSummary = {
   player_id: number;
   player_name: string;

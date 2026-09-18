@@ -1,8 +1,11 @@
 import type {
   DemoResetResult,
   DemoSeedResult,
+  Game,
+  GameDetail,
   Player,
   PlayerAnalytics,
+  PlayerComparison,
   Team,
   TeamAnalytics,
   TokenResponse,
@@ -123,6 +126,22 @@ export function listPlayers(teamId: number, authToken: string): Promise<Player[]
   return request<Player[]>(`/teams/${teamId}/players`, { authToken });
 }
 
+export function createPlayer(
+  teamId: number,
+  payload: { name: string; position?: string; jersey_number?: number },
+  authToken: string
+): Promise<Player> {
+  return request<Player>(`/teams/${teamId}/players`, {
+    method: "POST",
+    authToken,
+    body: JSON.stringify({
+      name: payload.name,
+      position: payload.position || null,
+      jersey_number: payload.jersey_number ?? null
+    })
+  });
+}
+
 export function uploadBoxScore(teamId: number, file: File, authToken: string): Promise<UploadJob> {
   const formData = new FormData();
   formData.append("file", file);
@@ -148,6 +167,20 @@ export function getTeamAnalytics(teamId: number, authToken: string): Promise<Tea
 
 export function getPlayerAnalytics(playerId: number, authToken: string): Promise<PlayerAnalytics> {
   return request<PlayerAnalytics>(`/players/${playerId}/analytics`, { authToken });
+}
+
+export function comparePlayers(teamId: number, playerIds: number[], authToken: string): Promise<PlayerComparison> {
+  const query = new URLSearchParams();
+  playerIds.forEach((playerId) => query.append("player_ids", String(playerId)));
+  return request<PlayerComparison>(`/teams/${teamId}/player-comparison?${query.toString()}`, { authToken });
+}
+
+export function listGames(teamId: number, authToken: string): Promise<Game[]> {
+  return request<Game[]>(`/teams/${teamId}/games`, { authToken });
+}
+
+export function getGame(gameId: number, authToken: string): Promise<GameDetail> {
+  return request<GameDetail>(`/games/${gameId}`, { authToken });
 }
 
 export function seedDemoData(reset = false, authToken?: string | null): Promise<DemoSeedResult> {

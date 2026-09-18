@@ -1,13 +1,30 @@
-import { Activity, Database, LogOut, RefreshCw, RotateCcw, Sparkles, Upload, Users } from "lucide-react";
+import {
+  Activity,
+  CalendarDays,
+  Database,
+  GitCompareArrows,
+  LayoutDashboard,
+  LogOut,
+  RefreshCw,
+  RotateCcw,
+  Sparkles,
+  Upload,
+  UserPlus,
+  Users
+} from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   API_BASE_URL,
+  comparePlayers,
+  createPlayer,
   createTeam,
+  getGame,
   getMe,
   getPlayerAnalytics,
   getTeamAnalytics,
   getUploadJob,
+  listGames,
   listPlayers,
   listTeams,
   listUploadJobs,
@@ -19,11 +36,25 @@ import {
 } from "./api/client";
 import { TeamTrendChart } from "./components/charts/TeamTrendChart";
 import { MetricCard } from "./components/layout/MetricCard";
+import { GameBrowser } from "./components/layout/GameBrowser";
+import { PlayerComparisonPanel } from "./components/layout/PlayerComparisonPanel";
 import { PlayerAnalyticsPanel } from "./components/layout/PlayerAnalyticsPanel";
 import { PlayerTable } from "./components/tables/PlayerTable";
-import type { Player, PlayerAnalytics, Team, TeamAnalytics, UploadJob, UploadResult, User } from "./types/api";
+import type {
+  Game,
+  GameDetail,
+  Player,
+  PlayerAnalytics,
+  PlayerComparison,
+  Team,
+  TeamAnalytics,
+  UploadJob,
+  UploadResult,
+  User
+} from "./types/api";
 
 const TOKEN_STORAGE_KEY = "courtiq_access_token";
+type WorkspaceView = "overview" | "compare" | "games";
 
 function App() {
   const [teams, setTeams] = useState<Team[]>([]);
@@ -32,8 +63,19 @@ function App() {
   const [teamAnalytics, setTeamAnalytics] = useState<TeamAnalytics | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
   const [playerAnalytics, setPlayerAnalytics] = useState<PlayerAnalytics | null>(null);
+  const [activeView, setActiveView] = useState<WorkspaceView>("overview");
+  const [comparisonPlayerIds, setComparisonPlayerIds] = useState<number[]>([]);
+  const [playerComparison, setPlayerComparison] = useState<PlayerComparison | null>(null);
+  const [games, setGames] = useState<Game[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+  const [gameDetail, setGameDetail] = useState<GameDetail | null>(null);
+  const [isComparisonLoading, setIsComparisonLoading] = useState(false);
+  const [isGameLoading, setIsGameLoading] = useState(false);
   const [teamName, setTeamName] = useState("");
   const [season, setSeason] = useState("2025-26");
+  const [playerName, setPlayerName] = useState("");
+  const [playerPosition, setPlayerPosition] = useState("");
+  const [playerJerseyNumber, setPlayerJerseyNumber] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadJob, setUploadJob] = useState<UploadJob | null>(null);
@@ -68,6 +110,11 @@ function App() {
       setPlayers([]);
       setTeamAnalytics(null);
       setPlayerAnalytics(null);
+      setComparisonPlayerIds([]);
+      setPlayerComparison(null);
+      setGames([]);
+      setSelectedGameId(null);
+      setGameDetail(null);
       setUploadResult(null);
       setUploadJob(null);
       setUploadJobs([]);
@@ -77,6 +124,11 @@ function App() {
     setUploadResult(null);
     setUploadJob(null);
     setUploadJobs([]);
+    setComparisonPlayerIds([]);
+    setPlayerComparison(null);
+    setGames([]);
+    setSelectedGameId(null);
+    setGameDetail(null);
     void refreshDashboard(selectedTeamId);
     void loadUploadJobs(selectedTeamId);
   }, [selectedTeamId]);
@@ -89,6 +141,24 @@ function App() {
 
     void loadPlayerAnalytics(selectedPlayerId);
   }, [selectedPlayerId]);
+
+  const comparisonKey = comparisonPlayerIds.join(",");
+
+  useEffect(() => {
+    if (activeView !== "compare" || selectedTeamId === null || comparisonPlayerIds.length < 2 || !authToken) {
+      return;
+    }
+
+    void loadPlayerComparison(selectedTeamId, comparisonPlayerIds);
+  }, [activeView, selectedTeamId, comparisonKey, authToken]);
+
+  useEffect(() => {
+    if (activeView !== "games" || selectedGameId === null || !authToken) {
+      return;
+    }
+
+    void loadGameDetail(selectedGameId);
+  }, [activeView, selectedGameId, authToken]);
 
   async function loadTeams() {
     if (!authToken) {
@@ -122,13 +192,26 @@ function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const [playersData, analyticsData] = await Promise.all([
+      const [playersData, analyticsData, gamesData] = await Promise.all([
         listPlayers(teamId, authToken),
-        getTeamAnalytics(teamId, authToken)
+        getTeamAnalytics(teamId, authToken),
+        listGames(teamId, authToken)
       ]);
 
       setPlayers(playersData);
       setTeamAnalytics(analyticsData);
+      setGames(gamesData);
+      setSelectedGameId((currentGameId) => {
+        if (currentGameId && gamesData.some((game) => game.id === currentGameId)) {
+          return currentGameId;
+        }
+
+        return gamesData[0]?.id ?? null;
+      });
+      setComparisonPlayerIds((currentPlayerIds) => {
+        const validIds = currentPlayerIds.filter((playerId) => playersData.some((player) => player.id === playerId));
+        return validIds.length >= 2 ? validIds : playersData.slice(0, 2).map((player) => player.id);
+      });
       setSelectedPlayerId((currentPlayerId) => {
         if (currentPlayerId && playersData.some((player) => player.id === currentPlayerId)) {
           return currentPlayerId;
@@ -155,6 +238,50 @@ function App() {
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     }
+  }
+
+  async function loadPlayerComparison(teamId: number, playerIds: number[]) {
+    if (!authToken) {
+      return;
+    }
+
+    setIsComparisonLoading(true);
+    setPlayerComparison(null);
+    setError(null);
+    try {
+      setPlayerComparison(await comparePlayers(teamId, playerIds, authToken));
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsComparisonLoading(false);
+    }
+  }
+
+  async function loadGameDetail(gameId: number) {
+    if (!authToken) {
+      return;
+    }
+
+    setIsGameLoading(true);
+    setGameDetail(null);
+    setError(null);
+    try {
+      setGameDetail(await getGame(gameId, authToken));
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsGameLoading(false);
+    }
+  }
+
+  function toggleComparisonPlayer(playerId: number) {
+    setComparisonPlayerIds((currentIds) => {
+      if (currentIds.includes(playerId)) {
+        return currentIds.filter((currentId) => currentId !== playerId);
+      }
+
+      return currentIds.length < 4 ? [...currentIds, playerId] : currentIds;
+    });
   }
 
   async function loadUploadJobs(teamId = selectedTeamId) {
@@ -185,6 +312,37 @@ function App() {
       setSelectedTeamId(team.id);
       setTeamName("");
       setStatusMessage(`${team.name} created.`);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function handleCreatePlayer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!playerName.trim() || selectedTeamId === null || !authToken) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const player = await createPlayer(
+        selectedTeamId,
+        {
+          name: playerName.trim(),
+          position: playerPosition.trim() || undefined,
+          jersey_number: playerJerseyNumber === "" ? undefined : Number(playerJerseyNumber)
+        },
+        authToken
+      );
+      setPlayerName("");
+      setPlayerPosition("");
+      setPlayerJerseyNumber("");
+      setStatusMessage(`${player.name} added to ${selectedTeam?.name}.`);
+      await refreshDashboard(selectedTeamId);
+      setSelectedPlayerId(player.id);
     } catch (caughtError) {
       setError(toErrorMessage(caughtError));
     } finally {
@@ -364,6 +522,11 @@ function App() {
     setPlayers([]);
     setTeamAnalytics(null);
     setPlayerAnalytics(null);
+    setComparisonPlayerIds([]);
+    setPlayerComparison(null);
+    setGames([]);
+    setSelectedGameId(null);
+    setGameDetail(null);
     setUploadResult(null);
     setUploadJob(null);
     setUploadJobs([]);
@@ -433,7 +596,36 @@ function App() {
             </button>
           </div>
 
-          <section className="workspace-grid">
+          <nav className="workspace-tabs" aria-label="Team workspace views">
+            <button
+              className={activeView === "overview" ? "active" : ""}
+              type="button"
+              onClick={() => setActiveView("overview")}
+            >
+              <LayoutDashboard size={17} />
+              Overview
+            </button>
+            <button
+              className={activeView === "compare" ? "active" : ""}
+              type="button"
+              onClick={() => setActiveView("compare")}
+              disabled={selectedTeamId === null}
+            >
+              <GitCompareArrows size={17} />
+              Compare
+            </button>
+            <button
+              className={activeView === "games" ? "active" : ""}
+              type="button"
+              onClick={() => setActiveView("games")}
+              disabled={selectedTeamId === null}
+            >
+              <CalendarDays size={17} />
+              Games
+            </button>
+          </nav>
+
+          <section className={activeView === "overview" ? "workspace-grid" : "workspace-grid detail-view"}>
         <aside className="panel sidebar-panel">
           <div className="section-heading">
             <div>
@@ -491,6 +683,8 @@ function App() {
           </div>
         </aside>
 
+        {activeView === "overview" ? (
+          <>
         <section className="main-column">
           <div className="panel upload-panel">
             <div>
@@ -616,6 +810,39 @@ function App() {
               </div>
               <span className="status-pill">{players.length}</span>
             </div>
+            <form className="player-form" onSubmit={handleCreatePlayer}>
+              <label>
+                <span>Name</span>
+                <input
+                  value={playerName}
+                  onChange={(event) => setPlayerName(event.target.value)}
+                  placeholder="Player name"
+                />
+              </label>
+              <label>
+                <span>Position</span>
+                <input
+                  value={playerPosition}
+                  onChange={(event) => setPlayerPosition(event.target.value)}
+                  placeholder="Guard"
+                />
+              </label>
+              <label>
+                <span>Number</span>
+                <input
+                  value={playerJerseyNumber}
+                  onChange={(event) => setPlayerJerseyNumber(event.target.value)}
+                  type="number"
+                  min="0"
+                  max="99"
+                  placeholder="7"
+                />
+              </label>
+              <button className="secondary-button" type="submit" disabled={isLoading || !playerName.trim()}>
+                <UserPlus size={16} />
+                Add
+              </button>
+            </form>
             <PlayerTable
               players={players}
               teamAnalytics={teamAnalytics}
@@ -625,6 +852,28 @@ function App() {
           </section>
           <PlayerAnalyticsPanel analytics={playerAnalytics} />
         </aside>
+          </>
+        ) : activeView === "compare" ? (
+          <div className="feature-column">
+            <PlayerComparisonPanel
+              players={players}
+              comparison={playerComparison}
+              selectedPlayerIds={comparisonPlayerIds}
+              isLoading={isComparisonLoading}
+              onTogglePlayer={toggleComparisonPlayer}
+            />
+          </div>
+        ) : (
+          <div className="feature-column">
+            <GameBrowser
+              games={games}
+              selectedGameId={selectedGameId}
+              gameDetail={gameDetail}
+              isLoading={isGameLoading}
+              onSelectGame={setSelectedGameId}
+            />
+          </div>
+        )}
           </section>
         </>
       )}

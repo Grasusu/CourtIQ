@@ -17,7 +17,10 @@ export function RecentPointsBars({ values }: RecentPointsBarsProps) {
           <div className="mini-bar-track">
             <span
               className="mini-bar-fill"
-              style={{ height: value === null ? 0 : `${Math.max((value / maxValue) * 100, 8)}%` }}
+              style={{
+                height: value === null ? 0 : `${Math.max((value / maxValue) * 100, 8)}%`,
+                animationDelay: `${index * 70}ms`
+              }}
             />
           </div>
           <span className="mini-bar-label">{value === null ? "-" : value.toFixed(1)}</span>

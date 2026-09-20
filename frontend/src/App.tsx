@@ -1,13 +1,16 @@
 import {
   Activity,
   CalendarDays,
-  Database,
+  Cloud,
+  Gauge,
   GitCompareArrows,
   LayoutDashboard,
   LogOut,
+  Plus,
   RefreshCw,
   RotateCcw,
   Sparkles,
+  Target,
   Upload,
   UserPlus,
   Users
@@ -15,7 +18,6 @@ import {
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
-  API_BASE_URL,
   comparePlayers,
   createPlayer,
   createTeam,
@@ -104,6 +106,15 @@ function App() {
 
     void restoreSession(authToken);
   }, []);
+
+  useEffect(() => {
+    if (!statusMessage) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => setStatusMessage(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [statusMessage]);
 
   useEffect(() => {
     if (selectedTeamId === null) {
@@ -541,15 +552,33 @@ function App() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={currentUser ? "app-shell authenticated" : "app-shell"}>
       <header className="top-bar">
-        <div>
-          <p className="eyebrow">CourtIQ</p>
-          <h1>Basketball performance workspace</h1>
+        <div className="brand-lockup">
+          <span className="brand-mark"><Activity size={21} /></span>
+          <span>
+            <strong>CourtIQ</strong>
+            <small>Basketball intelligence</small>
+          </span>
         </div>
-        <div className="api-chip">
-          <Database size={16} />
-          <span>{API_BASE_URL}</span>
+        <div className="page-context">
+          <p>{currentUser ? selectedTeam?.name ?? "Team workspace" : "Coach analytics platform"}</p>
+          <h1>{currentUser ? "Performance center" : "Turn game data into better decisions."}</h1>
+        </div>
+        <div className="header-actions">
+          <div className="api-chip">
+            <Cloud size={15} />
+            <span>Cloud synced</span>
+            <i className="live-dot" />
+          </div>
+          {currentUser ? (
+            <>
+              <span className="user-email">{currentUser.email}</span>
+              <button className="icon-button sign-out-button" type="button" onClick={handleLogout} aria-label="Sign out">
+                <LogOut size={17} />
+              </button>
+            </>
+          ) : null}
         </div>
       </header>
 
@@ -588,14 +617,6 @@ function App() {
         </section>
       ) : (
         <>
-          <div className="session-bar">
-            <span>{currentUser.email}</span>
-            <button className="secondary-button" type="button" onClick={handleLogout}>
-              <LogOut size={16} />
-              Sign out
-            </button>
-          </div>
-
           <nav className="workspace-tabs" aria-label="Team workspace views">
             <button
               className={activeView === "overview" ? "active" : ""}
@@ -629,8 +650,8 @@ function App() {
         <aside className="panel sidebar-panel">
           <div className="section-heading">
             <div>
-              <p className="eyebrow">Teams</p>
-              <h2>Workspace</h2>
+              <p className="eyebrow">Workspace</p>
+              <h2>Your teams</h2>
             </div>
             <button className="icon-button" type="button" onClick={() => void loadTeams()} aria-label="Refresh teams">
               <RefreshCw size={17} />
@@ -652,20 +673,23 @@ function App() {
             {teams.length === 0 ? <div className="empty-state compact">No teams yet.</div> : null}
           </div>
 
-          <form className="stack-form" onSubmit={handleCreateTeam}>
-            <label>
-              <span>Team name</span>
-              <input value={teamName} onChange={(event) => setTeamName(event.target.value)} placeholder="Amsterdam Lions" />
-            </label>
-            <label>
-              <span>Season</span>
-              <input value={season} onChange={(event) => setSeason(event.target.value)} placeholder="2025-26" />
-            </label>
-            <button className="primary-button" type="submit" disabled={isLoading || !teamName.trim()}>
-              <Users size={17} />
-              Create team
-            </button>
-          </form>
+          <details className="team-tools">
+            <summary><Plus size={16} /> New team</summary>
+            <form className="stack-form" onSubmit={handleCreateTeam}>
+              <label>
+                <span>Team name</span>
+                <input value={teamName} onChange={(event) => setTeamName(event.target.value)} placeholder="Amsterdam Lions" />
+              </label>
+              <label>
+                <span>Season</span>
+                <input value={season} onChange={(event) => setSeason(event.target.value)} placeholder="2025-26" />
+              </label>
+              <button className="primary-button" type="submit" disabled={isLoading || !teamName.trim()}>
+                <Users size={17} />
+                Create team
+              </button>
+            </form>
+          </details>
 
           <div className="demo-actions">
             <button className="secondary-button" type="button" onClick={() => void handleSeedDemo(false)} disabled={isDemoAction}>
@@ -684,7 +708,7 @@ function App() {
         </aside>
 
         {activeView === "overview" ? (
-          <>
+          <div className="overview-grid">
         <section className="main-column">
           <div className="panel upload-panel">
             <div>
@@ -748,7 +772,7 @@ function App() {
                 </button>
               </div>
               <div className="upload-history-list">
-                {uploadJobs.slice(0, 5).map((job) => (
+                {uploadJobs.slice(0, 3).map((job) => (
                   <button
                     className={uploadJob?.id === job.id ? "upload-history-item active" : "upload-history-item"}
                     key={job.id}
@@ -773,11 +797,12 @@ function App() {
           <section className="metric-grid">
             <MetricCard label="Games" value={teamAnalytics?.games_played ?? 0} icon={<Activity size={18} />} />
             <MetricCard label="Roster" value={teamAnalytics?.roster_size ?? 0} icon={<Users size={18} />} />
-            <MetricCard label="Team PPG" value={teamAnalytics?.average_team_points ?? 0} detail="box score total" />
+            <MetricCard label="Team PPG" value={teamAnalytics?.average_team_points ?? 0} detail="points per game" icon={<Target size={18} />} />
             <MetricCard
               label="Team TS%"
               value={teamAnalytics ? `${Math.round(teamAnalytics.true_shooting_percentage * 100)}%` : "0%"}
               detail="shot efficiency"
+              icon={<Gauge size={18} />}
             />
           </section>
 
@@ -852,7 +877,7 @@ function App() {
           </section>
           <PlayerAnalyticsPanel analytics={playerAnalytics} />
         </aside>
-          </>
+          </div>
         ) : activeView === "compare" ? (
           <div className="feature-column">
             <PlayerComparisonPanel

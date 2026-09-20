@@ -31,9 +31,13 @@ export function TeamTrendChart({ trends }: TeamTrendChartProps) {
       <svg viewBox={`0 0 ${width} ${height}`} role="img">
         <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} className="chart-axis" />
         <line x1={padding} y1={padding} x2={padding} y2={height - padding} className="chart-axis" />
-        <path d={path} className="chart-line" />
-        {points.map((point) => (
-          <g key={point.game_id}>
+        <path
+          d={`${path} L ${points.at(-1)?.x ?? padding} ${height - padding} L ${points[0]?.x ?? padding} ${height - padding} Z`}
+          className="chart-area"
+        />
+        <path d={path} className="chart-line" pathLength="1" />
+        {points.map((point, index) => (
+          <g key={point.game_id} className="chart-point" style={{ animationDelay: `${180 + index * 70}ms` }}>
             <circle cx={point.x} cy={point.y} r="5" className="chart-dot" />
             <text x={point.x} y={point.y - 12} textAnchor="middle" className="chart-value">
               {point.points}

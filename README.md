@@ -4,7 +4,7 @@ CourtIQ is a full-stack basketball analytics platform for coaches and players.
 
 Coaches can upload box-score CSV data, validate it, store it, and turn it into team and player insights: efficiency metrics, trends, upload history, player summaries, and dashboard views.
 
-The project is built as a serious MVP rather than a simple chart demo. It includes authentication, a relational data model, tested analytics logic, tracked CSV ingestion jobs, and replaceable storage/queue adapters so the upload pipeline can later move from local processing to cloud-backed processing.
+The project is built as a production-style portfolio application rather than a simple chart demo. It includes authentication, a relational data model, tested analytics logic, tracked CSV ingestion jobs, responsive product UI, and replaceable storage/queue adapters.
 
 ## Live Demo
 
@@ -14,6 +14,8 @@ The project is built as a serious MVP rather than a simple chart demo. It includ
 - Demo password: `strong-password`
 
 The Render Free backend sleeps after inactivity, so the first action can take a little longer while the API starts.
+
+![CourtIQ team performance dashboard](docs/images/courtiq-dashboard.png)
 
 ## Current Features
 
@@ -28,6 +30,8 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 - Two-to-four player comparison with metric leaders and authenticated team boundaries.
 - Game log with team totals, complete player box scores, and shooting efficiency.
 - Manual roster management from the coach workspace.
+- Responsive desktop, split-screen, tablet, and mobile layouts.
+- Reduced-motion-aware interface animation and animated analytics charts.
 - Demo seed/reset flow for portfolio walkthroughs.
 - Backend tests for metrics, validators, API workflows, storage, queueing, and upload processing.
 - Docker Compose setup with PostgreSQL.

@@ -11,9 +11,13 @@ from app.analytics.metrics import (
     assist_to_turnover_ratio,
     consistency_score,
     effective_field_goal_percentage,
+    latest_standard_score,
+    percentile_rank,
     points_per_minute,
+    recent_form_delta,
     recent_rolling_average,
     true_shooting_percentage,
+    weighted_linear_forecast,
 )
 from app.models.game import Game
 from app.models.player import Player
@@ -22,7 +26,11 @@ from app.models.team import Team
 from app.schemas.analytics import (
     PlayerAnalyticsRead,
     PlayerComparisonRead,
+    PlayerForecastRead,
     PlayerGameInsight,
+    PlayerImpactProfileRead,
+    PlayerIntelligenceRead,
+    PlayerSignalRead,
     TeamAnalyticsRead,
     TeamPlayerSummary,
     TeamTrendPoint,
@@ -102,6 +110,7 @@ def get_player_analytics(db: Session, player_id: int, owner_id: int | None = Non
             best_game=None,
             worst_game=None,
             summary=f"{player.name} has no recorded games yet.",
+            intelligence=_build_player_intelligence(db, player, []),
         )
 
     points = [stat.points for stat in stats]
@@ -141,6 +150,7 @@ def get_player_analytics(db: Session, player_id: int, owner_id: int | None = Non
         best_game=_to_game_insight(best_stat),
         worst_game=_to_game_insight(worst_stat),
         summary=_build_player_summary(player.name, stats),
+        intelligence=_build_player_intelligence(db, player, stats),
     )
 
 
@@ -321,3 +331,189 @@ def _build_team_summary(
         f"{team_name} recorded {len(game_trends)} games with an average of "
         f"{scoring_average:.1f} team points. {leader} leads the current sample in scoring."
     )
+
+
+def _build_player_intelligence(
+    db: Session,
+    player: Player,
+    stats: list[PlayerGameStats],
+) -> PlayerIntelligenceRead:
+    points = [float(stat.points) for stat in stats]
+    forecast = weighted_linear_forecast(points)
+    form_delta = recent_form_delta(points)
+
+    if forecast is None:
+        forecast_read = PlayerForecastRead(
+            projected_points=None,
+            interval_low=None,
+            interval_high=None,
+            trend_per_game=0.0,
+            confidence="insufficient",
+            sample_size=len(points),
+            model_description="At least three games are required for a forecast.",
+        )
+    else:
+        forecast_read = PlayerForecastRead(
+            projected_points=forecast.projected_value,
+            interval_low=forecast.interval_low,
+            interval_high=forecast.interval_high,
+            trend_per_game=forecast.trend_per_game,
+            confidence=forecast.confidence,
+            sample_size=forecast.sample_size,
+            model_description="Recency-weighted linear trend with a residual-error interval.",
+        )
+
+    profile = _build_impact_profile(db, player, stats)
+    signals = _build_player_signals(points, forecast_read, form_delta)
+    return PlayerIntelligenceRead(
+        forecast=forecast_read,
+        impact_profile=profile,
+        recent_form_delta=form_delta,
+        recommendation=_build_recommendation(profile, forecast_read),
+        signals=signals,
+    )
+
+
+def _build_impact_profile(
+    db: Session,
+    player: Player,
+    player_stats: list[PlayerGameStats],
+) -> PlayerImpactProfileRead:
+    team_stats = list(
+        db.scalars(
+            select(PlayerGameStats)
+            .join(Player)
+            .where(Player.team_id == player.team_id)
+        ).all()
+    )
+    grouped: dict[int, list[PlayerGameStats]] = defaultdict(list)
+    for stat in team_stats:
+        grouped[stat.player_id].append(stat)
+
+    if not player_stats or not grouped:
+        return PlayerImpactProfileRead(
+            archetype="Insufficient data",
+            scoring=0,
+            playmaking=0,
+            rebounding=0,
+            defense=0,
+            efficiency=0,
+        )
+
+    features = {player_id: _player_feature_values(stats) for player_id, stats in grouped.items()}
+    current = features[player.id]
+    profile_values = {
+        name: percentile_rank(current[name], [values[name] for values in features.values()])
+        for name in current
+    }
+    archetype = _classify_archetype(profile_values)
+    return PlayerImpactProfileRead(archetype=archetype, **profile_values)
+
+
+def _player_feature_values(stats: list[PlayerGameStats]) -> dict[str, float]:
+    minutes = max(sum(stat.minutes for stat in stats), 1.0)
+    assists = sum(stat.assists for stat in stats)
+    turnovers = sum(stat.turnovers for stat in stats)
+    ratio = assist_to_turnover_ratio(assists, turnovers)
+    turnover_control = 4.0 if isinf(ratio) else min(ratio, 4.0)
+    total_points = sum(stat.points for stat in stats)
+    total_fga = sum(stat.fga for stat in stats)
+    total_fta = sum(stat.fta for stat in stats)
+    return {
+        "scoring": total_points / minutes,
+        "playmaking": (assists / minutes) * (1 + turnover_control / 4),
+        "rebounding": sum(stat.rebounds for stat in stats) / minutes,
+        "defense": sum(stat.steals + stat.blocks for stat in stats) / minutes,
+        "efficiency": true_shooting_percentage(total_points, total_fga, total_fta),
+    }
+
+
+def _classify_archetype(profile: dict[str, int]) -> str:
+    if profile["scoring"] >= 70 and profile["playmaking"] >= 70:
+        return "Primary creator"
+    if profile["scoring"] >= 70 and profile["defense"] >= 70:
+        return "Two-way scorer"
+    if profile["scoring"] >= 70 and profile["efficiency"] >= 70:
+        return "Efficient scorer"
+
+    strongest = max(profile, key=profile.get)
+    return {
+        "scoring": "Volume scorer",
+        "playmaking": "Floor general",
+        "rebounding": "Glass specialist",
+        "defense": "Defensive disruptor",
+        "efficiency": "Efficiency specialist",
+    }[strongest]
+
+
+def _build_player_signals(
+    points: list[float],
+    forecast: PlayerForecastRead,
+    form_delta: float,
+) -> list[PlayerSignalRead]:
+    signals: list[PlayerSignalRead] = []
+    if forecast.projected_points is not None:
+        if forecast.trend_per_game >= 0.75:
+            signals.append(PlayerSignalRead(
+                level="positive",
+                title="Scoring trajectory rising",
+                detail=f"The weighted model is adding {forecast.trend_per_game:.1f} points per game.",
+            ))
+        elif forecast.trend_per_game <= -0.75:
+            signals.append(PlayerSignalRead(
+                level="watch",
+                title="Scoring trajectory cooling",
+                detail=f"The weighted model is declining {abs(forecast.trend_per_game):.1f} points per game.",
+            ))
+
+    if form_delta >= 2:
+        signals.append(PlayerSignalRead(
+            level="positive",
+            title="Recent form above baseline",
+            detail=f"The latest sample is {form_delta:.1f} points above the previous period.",
+        ))
+    elif form_delta <= -2:
+        signals.append(PlayerSignalRead(
+            level="watch",
+            title="Recent form below baseline",
+            detail=f"The latest sample is {abs(form_delta):.1f} points below the previous period.",
+        ))
+
+    standard_score = latest_standard_score(points)
+    if standard_score is not None and abs(standard_score) >= 1.5:
+        direction = "above" if standard_score > 0 else "below"
+        signals.append(PlayerSignalRead(
+            level="positive" if standard_score > 0 else "watch",
+            title="Unusual latest performance",
+            detail=f"The latest game was {abs(standard_score):.1f} standard deviations {direction} the prior baseline.",
+        ))
+
+    if not signals:
+        signals.append(PlayerSignalRead(
+            level="neutral",
+            title="Stable performance pattern",
+            detail="No material scoring shift or unusual latest result was detected.",
+        ))
+    return signals[:3]
+
+
+def _build_recommendation(profile: PlayerImpactProfileRead, forecast: PlayerForecastRead) -> str:
+    profile_values = {
+        "scoring": profile.scoring,
+        "playmaking": profile.playmaking,
+        "rebounding": profile.rebounding,
+        "defense": profile.defense,
+        "efficiency": profile.efficiency,
+    }
+    weakest = min(profile_values, key=profile_values.get)
+    recommendations = {
+        "scoring": "Create one more high-value scoring action per game through cuts, transition, or paint touches.",
+        "playmaking": "Prioritize advantage reads and track potential assists alongside turnovers in the next training block.",
+        "rebounding": "Add an explicit box-out and rebound target before increasing offensive volume.",
+        "defense": "Track deflections and matchup stops to develop the defensive signal beyond steals and blocks.",
+        "efficiency": "Review shot selection by zone and shift attempts toward the player's most efficient locations.",
+    }
+    recommendation = recommendations[weakest]
+    if forecast.trend_per_game <= -0.75:
+        recommendation += " Reduce volatility first; the current scoring trend is moving down."
+    return recommendation

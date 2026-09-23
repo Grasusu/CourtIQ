@@ -63,6 +63,19 @@ def test_create_team_rejects_duplicate_name(api_client):
     assert second_response.json()["detail"] == "Team name already exists"
 
 
+def test_different_coaches_can_use_the_same_team_name(api_client):
+    first_headers = auth_headers(api_client, "first@example.com")
+    second_headers = auth_headers(api_client, "second@example.com")
+    payload = {"name": "CourtIQ Demo", "season": "2026-27"}
+
+    first_response = api_client.post("/teams", json=payload, headers=first_headers)
+    second_response = api_client.post("/teams", json=payload, headers=second_headers)
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert first_response.json()["id"] != second_response.json()["id"]
+
+
 def test_create_player_rejects_duplicate_name_inside_team(api_client):
     headers = auth_headers(api_client)
     team_response = api_client.post(
@@ -164,6 +177,111 @@ def test_compare_players_and_read_game_detail(api_client):
         stat["points"] for stat in detail["player_stats"]
     )
     assert detail["player_stats"][0]["points"] >= detail["player_stats"][1]["points"]
+
+
+def test_manual_game_entry_updates_analytics_and_rejects_duplicates(api_client):
+    headers = auth_headers(api_client)
+    team = api_client.post(
+        "/teams",
+        json={"name": "Manual Stats", "season": "2026-27"},
+        headers=headers,
+    ).json()
+    alex = api_client.post(
+        f"/teams/{team['id']}/players",
+        json={"name": "Alex", "position": "Guard", "jersey_number": 7},
+        headers=headers,
+    ).json()
+    maya = api_client.post(
+        f"/teams/{team['id']}/players",
+        json={"name": "Maya", "position": "Forward", "jersey_number": 12},
+        headers=headers,
+    ).json()
+    payload = {
+        "game_date": "2026-09-20",
+        "opponent": "Rotterdam Waves",
+        "player_stats": [
+            {
+                "player_id": alex["id"], "minutes": 31, "points": 18,
+                "rebounds": 5, "assists": 7, "steals": 2, "blocks": 0,
+                "turnovers": 2, "fgm": 7, "fga": 14, "three_pm": 2,
+                "three_pa": 5, "ftm": 2, "fta": 3,
+            },
+            {
+                "player_id": maya["id"], "minutes": 29, "points": 12,
+                "rebounds": 9, "assists": 3, "steals": 1, "blocks": 2,
+                "turnovers": 1, "fgm": 5, "fga": 11, "three_pm": 1,
+                "three_pa": 3, "ftm": 1, "fta": 2,
+            },
+        ],
+    }
+
+    response = api_client.post(
+        f"/teams/{team['id']}/games/manual",
+        json=payload,
+        headers=headers,
+    )
+    assert response.status_code == 201
+    assert response.json()["team_totals"]["points"] == 30
+    assert len(response.json()["player_stats"]) == 2
+
+    analytics = api_client.get(f"/teams/{team['id']}/analytics", headers=headers)
+    assert analytics.json()["games_played"] == 1
+    player_analytics = api_client.get(f"/players/{alex['id']}/analytics", headers=headers).json()
+    assert player_analytics["games_played"] == 1
+    assert player_analytics["intelligence"]["forecast"]["confidence"] == "insufficient"
+
+    duplicate = api_client.post(
+        f"/teams/{team['id']}/games/manual",
+        json=payload,
+        headers=headers,
+    )
+    assert duplicate.status_code == 409
+
+
+def test_manual_game_entry_validates_shooting_math(api_client):
+    headers = auth_headers(api_client)
+    team = api_client.post(
+        "/teams",
+        json={"name": "Validation Team"},
+        headers=headers,
+    ).json()
+    player = api_client.post(
+        f"/teams/{team['id']}/players",
+        json={"name": "Alex"},
+        headers=headers,
+    ).json()
+
+    response = api_client.post(
+        f"/teams/{team['id']}/games/manual",
+        json={
+            "game_date": "2026-09-20",
+            "opponent": "Invalid Totals",
+            "player_stats": [{
+                "player_id": player["id"], "minutes": 20, "points": 99,
+                "rebounds": 2, "assists": 2, "steals": 0, "blocks": 0,
+                "turnovers": 1, "fgm": 4, "fga": 8, "three_pm": 1,
+                "three_pa": 3, "ftm": 1, "fta": 2,
+            }],
+        },
+        headers=headers,
+    )
+    assert response.status_code == 422
+    assert "Points must equal shooting totals" in response.text
+
+
+def test_player_analytics_include_predictive_intelligence(api_client):
+    headers = auth_headers(api_client)
+    seed = api_client.post("/demo/seed", headers=headers).json()
+    players = api_client.get(f"/teams/{seed['team_id']}/players", headers=headers).json()
+
+    response = api_client.get(f"/players/{players[0]['id']}/analytics", headers=headers)
+    assert response.status_code == 200
+    intelligence = response.json()["intelligence"]
+    assert intelligence["forecast"]["projected_points"] is not None
+    assert intelligence["forecast"]["sample_size"] == 6
+    assert intelligence["impact_profile"]["archetype"] != "Insufficient data"
+    assert intelligence["recommendation"]
+    assert intelligence["signals"]
 
 
 def test_comparison_rejects_duplicate_or_foreign_players(api_client):

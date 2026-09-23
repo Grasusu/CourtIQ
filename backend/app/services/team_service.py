@@ -9,7 +9,12 @@ from app.schemas.team import TeamCreate
 
 def create_team(db: Session, payload: TeamCreate, owner_id: int) -> Team:
     name = payload.name.strip()
-    existing_team = db.scalar(select(Team).where(func.lower(Team.name) == name.casefold()))
+    existing_team = db.scalar(
+        select(Team).where(
+            Team.owner_id == owner_id,
+            func.lower(Team.name) == name.casefold(),
+        )
+    )
     if existing_team is not None:
         raise ValueError("Team name already exists")
 

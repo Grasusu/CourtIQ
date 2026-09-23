@@ -10,9 +10,9 @@ from app.schemas.analytics import (
 )
 from app.schemas.auth import TokenRead, UserCreate, UserLogin, UserRead
 from app.schemas.demo import DemoResetResult, DemoSeedResult
-from app.schemas.game import GameCreate, GameDetailRead, GamePlayerStatsRead, GameRead, GameTeamTotals
+from app.schemas.game import GameCreate, GameDetailRead, GamePlayerStatsRead, GameRead, GameTeamTotals, ManualGameCreate
 from app.schemas.player import PlayerCreate, PlayerRead
-from app.schemas.player_game_stats import PlayerGameStatsCreate, PlayerGameStatsRead
+from app.schemas.player_game_stats import ManualPlayerGameStatsCreate, PlayerGameStatsCreate, PlayerGameStatsRead
 from app.schemas.team import TeamCreate, TeamRead
 from app.schemas.upload import UploadResult
 
@@ -22,6 +22,8 @@ __all__ = [
     "GamePlayerStatsRead",
     "GameRead",
     "GameTeamTotals",
+    "ManualGameCreate",
+    "ManualPlayerGameStatsCreate",
     "TokenRead",
     "DemoResetResult",
     "DemoSeedResult",

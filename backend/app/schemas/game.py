@@ -2,7 +2,9 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.schemas.player_game_stats import ManualPlayerGameStatsCreate
 
 
 class GameBase(BaseModel):
@@ -12,6 +14,17 @@ class GameBase(BaseModel):
 
 class GameCreate(GameBase):
     pass
+
+
+class ManualGameCreate(GameBase):
+    player_stats: list[ManualPlayerGameStatsCreate] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validate_unique_players(self):
+        player_ids = [stat.player_id for stat in self.player_stats]
+        if len(player_ids) != len(set(player_ids)):
+            raise ValueError("Each player can appear only once per game")
+        return self
 
 
 class GameRead(GameBase):

@@ -1,6 +1,7 @@
 """Analytics response schemas."""
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -15,6 +16,39 @@ class PlayerGameInsight(BaseModel):
     minutes: float
     true_shooting_percentage: float
     effective_field_goal_percentage: float
+
+
+class PlayerForecastRead(BaseModel):
+    projected_points: float | None
+    interval_low: float | None
+    interval_high: float | None
+    trend_per_game: float
+    confidence: Literal["insufficient", "low", "medium", "high"]
+    sample_size: int
+    model_description: str
+
+
+class PlayerImpactProfileRead(BaseModel):
+    archetype: str
+    scoring: int
+    playmaking: int
+    rebounding: int
+    defense: int
+    efficiency: int
+
+
+class PlayerSignalRead(BaseModel):
+    level: Literal["positive", "neutral", "watch"]
+    title: str
+    detail: str
+
+
+class PlayerIntelligenceRead(BaseModel):
+    forecast: PlayerForecastRead
+    impact_profile: PlayerImpactProfileRead
+    recent_form_delta: float
+    recommendation: str
+    signals: list[PlayerSignalRead]
 
 
 class PlayerAnalyticsRead(BaseModel):
@@ -34,6 +68,7 @@ class PlayerAnalyticsRead(BaseModel):
     best_game: PlayerGameInsight | None
     worst_game: PlayerGameInsight | None
     summary: str
+    intelligence: PlayerIntelligenceRead
 
 
 class TeamPlayerSummary(BaseModel):

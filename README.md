@@ -17,6 +17,8 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 
 ![CourtIQ team performance dashboard](docs/images/courtiq-dashboard.png)
 
+![CourtIQ team performance dashboard in dark mode](docs/images/courtiq-dashboard-dark.png)
+
 ## Current Features
 
 - Coach registration/login with JWT authentication.
@@ -29,9 +31,10 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 - Player analytics: averages, efficiency, recent form, best/worst game, and summary text.
 - Two-to-four player comparison with metric leaders and authenticated team boundaries.
 - Game log with team totals, complete player box scores, and shooting efficiency.
+- Print-ready game reports that export cleanly to PDF from the browser.
 - Manual roster management from the coach workspace.
 - Responsive desktop, split-screen, tablet, and mobile layouts.
-- Reduced-motion-aware interface animation and animated analytics charts.
+- Persistent light and dark themes with reduced-motion-aware interface animation and animated analytics charts.
 - Demo seed/reset flow for portfolio walkthroughs.
 - Backend tests for metrics, validators, API workflows, storage, queueing, and upload processing.
 - Docker Compose setup with PostgreSQL.
@@ -137,7 +140,6 @@ scripts/check.sh
 
 ## Next Improvements
 
-- Add PDF report export.
 - Replace in-process background tasks with a durable external queue.
 - Add rate limiting, audit logs, and richer role permissions.
 

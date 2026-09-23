@@ -6,10 +6,12 @@ import {
   GitCompareArrows,
   LayoutDashboard,
   LogOut,
+  Moon,
   Plus,
   RefreshCw,
   RotateCcw,
   Sparkles,
+  Sun,
   Target,
   Upload,
   UserPlus,
@@ -56,9 +58,19 @@ import type {
 } from "./types/api";
 
 const TOKEN_STORAGE_KEY = "courtiq_access_token";
+const THEME_STORAGE_KEY = "courtiq_theme";
 type WorkspaceView = "overview" | "compare" | "games";
+type Theme = "light" | "dark";
 
 function App() {
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (savedTheme === "light" || savedTheme === "dark") {
+      return savedTheme;
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -98,6 +110,12 @@ function App() {
     () => teams.find((team) => team.id === selectedTeamId) ?? null,
     [teams, selectedTeamId]
   );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme === "dark" ? "#0e1013" : "#17191d");
+  }, [theme]);
 
   useEffect(() => {
     if (!authToken) {
@@ -571,6 +589,15 @@ function App() {
             <span>Cloud synced</span>
             <i className="live-dot" />
           </div>
+          <button
+            className="icon-button theme-button"
+            type="button"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            aria-label={`Use ${theme === "light" ? "dark" : "light"} mode`}
+            title={`Use ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+          </button>
           {currentUser ? (
             <>
               <span className="user-email">{currentUser.email}</span>

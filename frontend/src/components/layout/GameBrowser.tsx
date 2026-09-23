@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronRight, FileDown } from "lucide-react";
 
 import type { Game, GameDetail } from "../../types/api";
 
@@ -18,7 +18,18 @@ export function GameBrowser({ games, selectedGameId, gameDetail, isLoading, onSe
           <p className="eyebrow">Game log</p>
           <h2>Match details</h2>
         </div>
-        <span className="status-pill">{games.length} games</span>
+        <div className="games-heading-actions">
+          <span className="status-pill">{games.length} games</span>
+          <button
+            className="secondary-button export-report-button"
+            type="button"
+            onClick={() => window.print()}
+            disabled={!gameDetail}
+          >
+            <FileDown size={16} />
+            Export PDF
+          </button>
+        </div>
       </div>
 
       {games.length === 0 ? (
@@ -48,6 +59,10 @@ export function GameBrowser({ games, selectedGameId, gameDetail, isLoading, onSe
               <div className="empty-state">Loading game...</div>
             ) : (
               <>
+                <div className="print-report-brand">
+                  <strong>CourtIQ</strong>
+                  <span>Game performance report</span>
+                </div>
                 <div className="game-detail-heading">
                   <div>
                     <p className="eyebrow">{formatDate(gameDetail.game_date)}</p>

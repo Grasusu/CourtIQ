@@ -4,7 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="CourtIQ basketball performance analytics for coaches and players." />
-    <meta name="theme-color" content="#1f5a43" />
+    <meta name="theme-color" content="#17191d" />
+    <script>
+      (() => {
+        const savedTheme = localStorage.getItem("courtiq_theme");
+        const theme = savedTheme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
     <title>CourtIQ | Basketball Performance Intelligence</title>
   </head>
   <body>

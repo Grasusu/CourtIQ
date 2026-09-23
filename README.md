@@ -2,7 +2,7 @@
 
 CourtIQ is a full-stack basketball analytics platform for coaches and players.
 
-Coaches can upload box-score CSV data, validate it, store it, and turn it into team and player insights: efficiency metrics, trends, upload history, player summaries, and dashboard views.
+Coaches can upload CSV data or enter games manually, validate and store complete box scores, and turn them into team and player intelligence: efficiency metrics, forecasts, role profiles, change detection, recommendations, and dashboard views.
 
 The project is built as a production-style portfolio application rather than a simple chart demo. It includes authentication, a relational data model, tested analytics logic, tracked CSV ingestion jobs, responsive product UI, and replaceable storage/queue adapters.
 
@@ -25,10 +25,14 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 - Coach-owned team workspaces.
 - Team and player management.
 - CSV box-score upload with validation.
+- Manual game entry for selected roster players, with automatic point calculation and shooting consistency checks.
 - `UploadJob` tracking with `pending`, `processing`, `completed`, and `failed` states.
 - Upload history in the frontend.
 - Team dashboard metrics and scoring trends.
 - Player analytics: averages, efficiency, recent form, best/worst game, and summary text.
+- Explainable next-game scoring forecasts using recency-weighted regression and residual-error prediction intervals.
+- Team-relative player archetypes across scoring, playmaking, rebounding, defense, and efficiency.
+- Automated trend, form, and outlier signals with targeted coach recommendations.
 - Two-to-four player comparison with metric leaders and authenticated team boundaries.
 - Game log with team totals, complete player box scores, and shooting efficiency.
 - Print-ready game reports that export cleanly to PDF from the browser.
@@ -40,6 +44,7 @@ The Render Free backend sleeps after inactivity, so the first action can take a 
 - Docker Compose setup with PostgreSQL.
 - Public deployment using Vercel, Render, and Supabase PostgreSQL.
 - Persistent private CSV storage using Supabase Storage in production.
+- Multi-tenant team naming, allowing each coach to maintain an independent workspace.
 
 ## Project Structure
 
@@ -75,7 +80,7 @@ CourtIQ/
 ## Stack
 
 - Backend: FastAPI, SQLAlchemy, Alembic, PostgreSQL, PyJWT
-- Analytics: Python, typed CSV validation, tested basketball metrics
+- Analytics: Python, weighted linear forecasting, percentile profiles, anomaly detection, typed validation
 - Frontend: React, TypeScript, Vite
 - DevOps: Docker Compose, GitHub Actions, Render, Vercel, local verification script
 - Cloud: Supabase PostgreSQL with local and Supabase upload storage adapters
@@ -141,6 +146,7 @@ scripts/check.sh
 ## Next Improvements
 
 - Replace in-process background tasks with a durable external queue.
+- Add shot-location data for zone efficiency and shot-quality modeling.
 - Add rate limiting, audit logs, and richer role permissions.
 
 See `docs/` for architecture notes, CSV format, metrics, backend status, and [deployment planning](docs/deployment.md).

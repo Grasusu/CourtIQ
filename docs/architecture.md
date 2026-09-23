@@ -2,6 +2,16 @@
 
 CourtIQ should grow in stages.
 
+## Current Data Paths
+
+```txt
+CSV upload -> storage -> upload job -> validation -> database
+Manual game -> Pydantic validation -> roster ownership check -> database
+Database -> analytics service -> forecast/profile/signals -> React dashboard
+```
+
+Both ingestion paths write to the same `Game` and `PlayerGameStats` tables. Analytics therefore remain independent of how the coach supplied the data.
+
 ## MVP Architecture
 
 ```txt

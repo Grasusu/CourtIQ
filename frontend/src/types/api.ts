@@ -72,6 +72,39 @@ export type PlayerGameInsight = {
   effective_field_goal_percentage: number;
 };
 
+export type PlayerForecast = {
+  projected_points: number | null;
+  interval_low: number | null;
+  interval_high: number | null;
+  trend_per_game: number;
+  confidence: "insufficient" | "low" | "medium" | "high";
+  sample_size: number;
+  model_description: string;
+};
+
+export type PlayerImpactProfile = {
+  archetype: string;
+  scoring: number;
+  playmaking: number;
+  rebounding: number;
+  defense: number;
+  efficiency: number;
+};
+
+export type PlayerSignal = {
+  level: "positive" | "neutral" | "watch";
+  title: string;
+  detail: string;
+};
+
+export type PlayerIntelligence = {
+  forecast: PlayerForecast;
+  impact_profile: PlayerImpactProfile;
+  recent_form_delta: number;
+  recommendation: string;
+  signals: PlayerSignal[];
+};
+
 export type PlayerAnalytics = {
   player_id: number;
   player_name: string;
@@ -89,6 +122,7 @@ export type PlayerAnalytics = {
   best_game: PlayerGameInsight | null;
   worst_game: PlayerGameInsight | null;
   summary: string;
+  intelligence: PlayerIntelligence;
 };
 
 export type PlayerComparison = {
@@ -130,6 +164,29 @@ export type GameTeamTotals = Omit<GamePlayerStats, "player_id" | "player_name">;
 export type GameDetail = Game & {
   player_stats: GamePlayerStats[];
   team_totals: GameTeamTotals;
+};
+
+export type ManualPlayerGameStats = {
+  player_id: number;
+  minutes: number;
+  points: number;
+  rebounds: number;
+  assists: number;
+  steals: number;
+  blocks: number;
+  turnovers: number;
+  fgm: number;
+  fga: number;
+  three_pm: number;
+  three_pa: number;
+  ftm: number;
+  fta: number;
+};
+
+export type ManualGamePayload = {
+  game_date: string;
+  opponent: string;
+  player_stats: ManualPlayerGameStats[];
 };
 
 export type TeamPlayerSummary = {

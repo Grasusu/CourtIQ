@@ -3,6 +3,7 @@ import type {
   DemoSeedResult,
   Game,
   GameDetail,
+  ManualGamePayload,
   Player,
   PlayerAnalytics,
   PlayerComparison,
@@ -181,6 +182,18 @@ export function listGames(teamId: number, authToken: string): Promise<Game[]> {
 
 export function getGame(gameId: number, authToken: string): Promise<GameDetail> {
   return request<GameDetail>(`/games/${gameId}`, { authToken });
+}
+
+export function createManualGame(
+  teamId: number,
+  payload: ManualGamePayload,
+  authToken: string
+): Promise<GameDetail> {
+  return request<GameDetail>(`/teams/${teamId}/games/manual`, {
+    method: "POST",
+    authToken,
+    body: JSON.stringify(payload)
+  });
 }
 
 export function seedDemoData(reset = false, authToken?: string | null): Promise<DemoSeedResult> {

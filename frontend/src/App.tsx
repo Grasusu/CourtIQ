@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Moon,
+  PenLine,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -21,6 +22,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import {
   comparePlayers,
+  createManualGame,
   createPlayer,
   createTeam,
   getGame,
@@ -39,6 +41,7 @@ import {
   uploadBoxScore
 } from "./api/client";
 import { TeamTrendChart } from "./components/charts/TeamTrendChart";
+import { ManualGameForm } from "./components/forms/ManualGameForm";
 import { MetricCard } from "./components/layout/MetricCard";
 import { GameBrowser } from "./components/layout/GameBrowser";
 import { PlayerComparisonPanel } from "./components/layout/PlayerComparisonPanel";
@@ -47,6 +50,7 @@ import { PlayerTable } from "./components/tables/PlayerTable";
 import type {
   Game,
   GameDetail,
+  ManualGamePayload,
   Player,
   PlayerAnalytics,
   PlayerComparison,
@@ -101,6 +105,8 @@ function App() {
   const [password, setPassword] = useState("strong-password");
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isManualGameOpen, setIsManualGameOpen] = useState(false);
+  const [isManualGameSubmitting, setIsManualGameSubmitting] = useState(false);
   const [isDemoAction, setIsDemoAction] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -412,6 +418,9 @@ function App() {
         });
         setStatusMessage(`${finishedJob.rows_processed} rows imported.`);
         await refreshDashboard(selectedTeamId);
+        if (selectedPlayerId !== null) {
+          await loadPlayerAnalytics(selectedPlayerId);
+        }
       } else {
         setError(finishedJob.error_message ?? "Upload failed.");
       }
@@ -420,6 +429,31 @@ function App() {
       setError(toErrorMessage(caughtError));
     } finally {
       setIsUploading(false);
+    }
+  }
+
+  async function handleManualGame(payload: ManualGamePayload) {
+    if (selectedTeamId === null || !authToken) {
+      return;
+    }
+
+    setIsManualGameSubmitting(true);
+    setError(null);
+    try {
+      const game = await createManualGame(selectedTeamId, payload, authToken);
+      await refreshDashboard(selectedTeamId);
+      if (selectedPlayerId !== null) {
+        await loadPlayerAnalytics(selectedPlayerId);
+      }
+      setSelectedGameId(game.id);
+      setGameDetail(game);
+      setActiveView("games");
+      setStatusMessage(`Game against ${game.opponent} added.`);
+    } catch (caughtError) {
+      setError(toErrorMessage(caughtError));
+      throw caughtError;
+    } finally {
+      setIsManualGameSubmitting(false);
     }
   }
 
@@ -559,6 +593,7 @@ function App() {
     setUploadResult(null);
     setUploadJob(null);
     setUploadJobs([]);
+    setIsManualGameOpen(false);
     setStatusMessage("Signed out.");
   }
 
@@ -644,6 +679,13 @@ function App() {
         </section>
       ) : (
         <>
+          <ManualGameForm
+            isOpen={isManualGameOpen}
+            players={players}
+            isSubmitting={isManualGameSubmitting}
+            onClose={() => setIsManualGameOpen(false)}
+            onSubmit={handleManualGame}
+          />
           <nav className="workspace-tabs" aria-label="Team workspace views">
             <button
               className={activeView === "overview" ? "active" : ""}
@@ -743,6 +785,15 @@ function App() {
               <h2>{selectedTeam?.name ?? "No team selected"}</h2>
             </div>
             <form className="upload-form" onSubmit={handleUpload}>
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => setIsManualGameOpen(true)}
+                disabled={selectedTeamId === null || players.length === 0}
+              >
+                <PenLine size={17} />
+                Manual game
+              </button>
               <label className="file-input">
                 <Upload size={18} />
                 <span>{selectedFile?.name ?? "Choose CSV"}</span>
@@ -902,8 +953,10 @@ function App() {
               onSelectPlayer={setSelectedPlayerId}
             />
           </section>
-          <PlayerAnalyticsPanel analytics={playerAnalytics} />
         </aside>
+        <div className="overview-player-detail">
+          <PlayerAnalyticsPanel analytics={playerAnalytics} />
+        </div>
           </div>
         ) : activeView === "compare" ? (
           <div className="feature-column">
